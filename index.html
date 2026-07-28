@@ -53,7 +53,7 @@
   <div id="mobileBg"></div>
   <div id="loader"><div class="spinner"></div><p>Cargando Dino...</p></div>
   <div id="mSubtitle"></div>
-  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#2FCAD6;">v8</span></h1></div></div>
+  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#2FCAD6;">v9</span></h1></div></div>
   <div id="mNav">
     <button class="navItem" id="navWave"><span class="navCircle">👋</span><span class="navLabel">Ola</span></button>
       <button class="navItem" id="navIdle"><span class="navCircle">🧍</span><span class="navLabel">Parado</span></button>
@@ -112,6 +112,7 @@
     const dc = new THREE.DRACOLoader(); dc.setDecoderPath('libs/draco/'); loader.setDRACOLoader(dc);
     let dinoModel, headBone, eyeL, eyeR, mouth, mouthTex = {}, dinoMixer, dinoActions = {};
     let headBase=null, handLBase=null, handRBase=null, handLBone=null, handRBone=null;
+    let waveArmBone=null, waveArmBase=null;
     const D2R = Math.PI/180;
 
     const EYE_L  = { x: -32.2, y: 50.6, z: 18.4, s: 25.3, rx: -25, ry: -25, rz: 4, cv: 0.55 };
@@ -149,6 +150,9 @@
       if(headBone)headBase=headBone.rotation.clone();
       if(handLBone)handLBase=handLBone.rotation.clone();
       if(handRBone)handRBase=handRBone.rotation.clone();
+      // Hueso del brazo para moderar animacion wave
+      waveArmBone=dinoModel.getObjectByName('RightArm')||dinoModel.getObjectByName('RightShoulder')||dinoModel.getObjectByName('arm_right');
+      if(waveArmBone)waveArmBase=waveArmBone.rotation.clone();
       eyeL=makeEye(eLT,EYE_L,a); eyeR=makeEye(eRT,EYE_R,a);
       const as=mouthTex.X?.image?.width/mouthTex.X?.image?.height||2; const mw=1.6,mh=1.6/as;
       const mg=new THREE.PlaneBufferGeometry(mw,mh,20,14); mg.computeVertexNormals();
@@ -346,6 +350,14 @@
       if(handRBone&&handRBase){
         handRBone.rotation.x=handRBase.x+Math.sin(t*1.1)*0.04;
         handRBone.rotation.z=handRBase.z+Math.sin(t*0.8+0.7)*0.03;
+      }
+      // Moderar animacion wave: limitar elevacion del brazo y evitar deformacion
+      if(waveArmBone&&waveArmBase&&dinoActions.wave&&dinoActions.wave.isRunning()){
+        const r=waveArmBone.rotation;
+        if(r.x>0.7)r.x=0.7;
+        if(r.x<-0.3)r.x=-0.3;
+        if(r.z>0.5)r.z=0.5;
+        if(r.z<-0.3)r.z=-0.3;
       }
       renderer.render(scene,camera);
     }
