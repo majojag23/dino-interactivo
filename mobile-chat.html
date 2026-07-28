@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Dino Chat</title>
+  <link rel="preload" as="fetch" href="assets/models/Meshy_AI_Cute_Baby_Dinosaur_biped_Character_output-optimized.glb" crossorigin="anonymous" />
+  <link rel="preload" as="script" href="libs/three.min.js" />
+  <link rel="preload" as="script" href="libs/GLTFLoader.js" />
+  <link rel="preload" as="script" href="libs/OrbitControls.js" />
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #1a2a1a; font-family: 'Segoe UI', Roboto, sans-serif; }
+    canvas { display: block; }
+    #mobileBg { position: fixed; inset: 0; z-index: 0; background: linear-gradient(180deg, #3a7a3a 0%, #5a9a5a 55%, #aadda0 100%); }
+    #loader { position: fixed; inset: 0; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    #loader .spinner { width: 50px; height: 50px; border: 4px solid #333; border-top: 4px solid #8fbc8f; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loader p { color: #aaa; font-size: 1.2em; }
+    :root { --mFrame: min(480px, 100vw); }
+    #mHeader { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: var(--mFrame); z-index: 20; display: flex; align-items: flex-start; gap: 12px; padding: max(14px, env(safe-area-inset-top)) 16px 0; pointer-events: none; }
+    #mTitle { flex: 1; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+    #mTitle h1 { margin: 6px 0 0; font-size: 20px; font-weight: 800; line-height: 1.25; }
+    body > canvas { position: fixed !important; inset: 0; z-index: 1; width: 100% !important; height: 100% !important; }
+    #mSubtitle { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%) translateY(10px); width: max-content; max-width: min(400px, calc(var(--mFrame) - 40px)); padding: 10px 18px; background: rgba(255,255,255,0.95); color: #245065; border-radius: 16px; font-size: 15px; font-weight: 600; text-align: center; opacity: 0; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: opacity .25s ease, transform .25s ease; z-index: 25; }
+    #mSubtitle.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #mBottom { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 20; width: var(--mFrame); padding: 8px 14px max(14px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+    #mChatLog { max-height: 120px; overflow-y: auto; margin-bottom: 4px; font-size: 12px; }
+    .msg { padding: 4px 10px; border-radius: 10px; font-size: 12px; max-width: 80%; word-wrap: break-word; margin-bottom: 4px; }
+    .msg-user { align-self: flex-end; background: #8fbc8f; color: #1a2a1a; margin-left: auto; }
+    .msg-dino { align-self: flex-start; background: rgba(255,255,255,0.9); color: #234; }
+    .msg-think { align-self: flex-start; color: #5a7a5a; font-style: italic; font-size: 11px; }
+    #mInputBar { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 26px; padding: 6px 6px 6px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    #mInput { flex: 1; border: none; outline: none; font-size: 14px; color: #234; background: transparent; }
+    #mInput::placeholder { color: #9fb3bd; }
+    #mSend { width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0; background: #8fbc8f; color: #fff; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div id="mobileBg"></div>
+  <div id="loader"><div class="spinner"></div><p>Cargando Dino...</p></div>
+  <div id="mSubtitle"></div>
+  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino</h1></div></div>
+  <div id="mBottom">
+    <div id="mChatLog"></div>
+    <div id="mInputBar">
+      <input id="mInput" type="text" placeholder="Escribe algo o preguntale a Dino" />
+      <button id="mSend" aria-label="Enviar">→</button>
+    </div>
+  </div>
+  <audio id="dinoAudio"></audio>
+
+  <script src="libs/three.min.js"></script>
+  <script src="libs/OrbitControls.js"></script>
+  <script src="libs/GLTFLoader.js"></script>
+  <script src="libs/DRACOLoader.js"></script>
+
+  <script>
+    // DRACO
+    const loader = new THREE.GLTFLoader();
+    const dracoLoader = new THREE.DRACOLoader();
+    dracoLoader.setDecoderPath('libs/draco/');
+    loader.setDRACOLoader(dracoLoader);
+
+    // ==================== THREE.JS SETUP ====================
+    const scene = new THREE.Scene(); scene.background = null;
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100); camera.position.set(0, 1.5, 4);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement); controls.target.set(0, 1.0, 0); controls.enableDamping = true; controls.enableZoom = true;
+    scene.add(new THREE.HemisphereLight(0xeafffb, 0x2a3d3d, 1.3));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(2, 3, 2); scene.add(sun);
+    scene.add(new THREE.DirectionalLight(0x88aaff, 0.6).translateX(-2).translateY(2).translateZ(-2));
+    // loader already configured above with DRACO
+
+    let dinoModel = null, headBone = null, eyeL = null, eyeR = null, mouth = null;
+    let mouthTextures = {};
+    const D2R = Math.PI/180;
+
+    // Coordenadas calibradas
+    const EYE_L = { x: -18.4, y: 34.5, z: 7.9, s: 20.7, rx: -37, ry: -25, rz: 0 };
+    const EYE_R = { x: 25.3, y: 32.2, z: 0, s: 18.4, rx: -37, ry: 41, rz: 4 };
+    const MOUTH = { x: 9.2, y: 23, z: 26.4, s: 13.8, rx: -8, ry: 29, rz: -12 };
+
+    const MOUTH_FILES = {
+      X:'assets/bocas_dinosaurio_recortadas/01_boca_cerrada_X.png', A:'assets/bocas_dinosaurio_recortadas/03_boca_ah_A.png',
+      B:'assets/bocas_dinosaurio_recortadas/02_boca_mpb_B.png', C:'assets/bocas_dinosaurio_recortadas/04_boca_eh_C.png',
+      D:'assets/bocas_dinosaurio_recortadas/05_boca_ah_grande_D.png', E:'assets/bocas_dinosaurio_recortadas/06_boca_oh_E.png',
+      F:'assets/bocas_dinosaurio_recortadas/07_boca_oo_u_F.png', G:'assets/bocas_dinosaurio_recortadas/08_boca_fv_dientes_G.png',
+    };
+
+    function loadTex(url) { return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height; c.getContext('2d').drawImage(i,0,0); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.minFilter=THREE.LinearFilter; res(t); }; i.onerror=rej; i.src=url; }); }
+    function setMouthViseme(code) { if(mouth&&mouthTextures[code]){mouth.material.map=mouthTextures[code];mouth.material.needsUpdate=true;} }
+    function makeEye(tex,cfg,anchor){ const w=1.8,h=1.4; const g=new THREE.PlaneBufferGeometry(w,h,12,8); const p=g.attributes.position; for(let i=0;i<p.count;i++){const x=p.getX(i)/(w/2),y=p.getY(i)/(h/2);p.setZ(i,-0.14*(x*x*0.6+y*y*0.4));} g.computeVertexNormals(); const m=new THREE.MeshStandardMaterial({map:tex,transparent:true,roughness:0.5,depthTest:false,depthWrite:false}); const mesh=new THREE.Mesh(g,m); mesh.renderOrder=999;mesh.frustumCulled=false;mesh.visible=true; const adj=new THREE.Group(); adj.position.set(cfg.x,cfg.y,cfg.z);adj.scale.setScalar(cfg.s);adj.rotation.set(cfg.rx*D2R,cfg.ry*D2R,cfg.rz*D2R);adj.add(mesh);anchor.add(adj);return mesh; }
+
+    async function init3D() {
+      const [baseG, eyeLT, eyeRT, ...mouthT] = await Promise.all([
+        new Promise((r,j)=>loader.load('assets/models/Meshy_AI_Cute_Baby_Dinosaur_biped_Character_output-optimized.glb',r,undefined,j)),
+        loadTex('assets/ojos/ojo_cerrado_izquierdo_imagen.png'),
+        loadTex('assets/ojos/ojo_cerrado_derecho_imagen.png'),
+        ...Object.entries(MOUTH_FILES).map(([,u])=>loadTex(u))
+      ]);
+      Object.entries(MOUTH_FILES).forEach(([c],i)=>{mouthTextures[c]=mouthT[i];});
+      dinoModel=baseG.scene; dinoModel.traverse(n=>{if(n.isMesh)n.frustumCulled=false;}); scene.add(dinoModel);
+      dinoModel.updateWorldMatrix(true,false); const bb=new THREE.Box3().setFromObject(dinoModel); dinoModel.position.set(0,-bb.min.y,0);
+      headBone=dinoModel.getObjectByName('Head'); const anchor=headBone||dinoModel; anchor.updateWorldMatrix(true,false);
+      eyeL=makeEye(eyeLT,EYE_L,anchor); eyeR=makeEye(eyeRT,EYE_R,anchor);
+      const as=mouthTextures.X?.image?.width/mouthTextures.X?.image?.height||2; const mw=1.6,mh=1.6/as;
+      const mg=new THREE.PlaneBufferGeometry(mw,mh,20,14); mg.computeVertexNormals();
+      const mm=new THREE.MeshStandardMaterial({map:mouthTextures.X,transparent:true,roughness:0.6,depthTest:false,depthWrite:false});
+      mouth=new THREE.Mesh(mg,mm);mouth.renderOrder=999;mouth.frustumCulled=false;
+      const mG=new THREE.Group();mG.position.set(MOUTH.x,MOUTH.y,MOUTH.z);mG.scale.setScalar(MOUTH.s);mG.rotation.set(MOUTH.rx*D2R,MOUTH.ry*D2R,MOUTH.rz*D2R);mG.add(mouth);anchor.add(mG);
+      function blink(){if(eyeL)eyeL.visible=true;if(eyeR)eyeR.visible=true;setTimeout(()=>{if(eyeL)eyeL.visible=false;if(eyeR)eyeR.visible=false;},130);setTimeout(blink,3000+Math.random()*5000);}
+      blink();
+      document.getElementById('loader').classList.add('hidden');
+    }
+
+    // ==================== CHAT / LLM / TTS ====================
+    const dinoAudio = document.getElementById('dinoAudio');
+    let OR_KEY = localStorage.getItem('mimo_or_key') || '';
+    let EL_KEY = localStorage.getItem('mimo_el_key') || '';
+    let EL_VOICE = localStorage.getItem('mimo_el_voice_id') || 'U9tZtg3uJtVgXPkvosWR';
+    let _askBusy = false;
+
+    fetch('https://claw.virtualelearning.co/lumikeys').then(r=>r.ok?r.json():null).then(d=>{
+      if(!d)return; if(d.or_key){OR_KEY=d.or_key;localStorage.setItem('mimo_or_key',d.or_key);}
+      if(d.el_key){EL_KEY=d.el_key;localStorage.setItem('mimo_el_key',d.el_key);}
+      if(d.el_voice_id){EL_VOICE=d.el_voice_id;localStorage.setItem('mimo_el_voice_id',d.el_voice_id);}
+    }).catch(()=>{});
+
+    function _cancelAllAudio() {
+      try {
+        if (dinoAudio && !dinoAudio.paused) { dinoAudio.pause(); dinoAudio.currentTime = 0; }
+        if ('speechSynthesis' in window) speechSynthesis.cancel();
+        setMouthViseme('X'); hideSubtitle();
+      } catch(e) {}
+    }
+
+    function append(msg, cls) { const d=document.createElement('div'); d.textContent=msg; d.className='msg '+cls; document.getElementById('mChatLog').appendChild(d); d.scrollIntoView(false); }
+    function showSubtitle(t) { const s=document.getElementById('mSubtitle'); s.textContent=t; s.classList.add('visible'); }
+    function hideSubtitle() { document.getElementById('mSubtitle').classList.remove('visible'); }
+
+    function makeVisemes(text) {
+      const seq=[]; let t=0;
+      for(const ch of text.toLowerCase()) {
+        let v='X'; if('aá'.includes(ch))v='A'; else if('eé'.includes(ch))v='C'; else if('ií'.includes(ch))v='B'; else if('oó'.includes(ch))v='E'; else if('uú'.includes(ch))v='F'; else if('pbm'.includes(ch))v='B'; else if('fv'.includes(ch))v='G'; else if(' .,!?'.includes(ch)){t+=0.08;continue;}
+        if(v!=='X')seq.push({t,v,intensity:0.9});
+        t+=0.075;
+      }
+      return seq;
+    }
+
+    async function speak(text) {
+      _cancelAllAudio();
+      showSubtitle(text);
+      if(!EL_KEY){append('Falta ElevenLabs Key','dino');hideSubtitle();return;}
+      const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+EL_VOICE+'/stream',{method:'POST',headers:{'xi-api-key':EL_KEY,'Content-Type':'application/json'},body:JSON.stringify({text,model_id:'eleven_multilingual_v2',voice_settings:{stability:0.65,similarity_boost:0.88}})});
+      if(!res.ok||!res.body){append('Error TTS','dino');hideSubtitle();return;}
+      const ms=new MediaSource(); dinoAudio.src=URL.createObjectURL(ms);
+      const visemes=makeVisemes(text); let visIdx=0, visStart=0;
+      dinoAudio.onplay=()=>{visStart=performance.now()/1000;};
+      dinoAudio.onended=()=>{setMouthViseme('X');hideSubtitle();};
+      dinoAudio.onerror=()=>{setMouthViseme('X');hideSubtitle();};
+      let visTimer=setInterval(()=>{
+        if(dinoAudio.paused||dinoAudio.ended){clearInterval(visTimer);setMouthViseme('X');return;}
+        const el=(performance.now()/1000-visStart)*0.9;
+        while(visIdx<visemes.length&&visemes[visIdx].t<=el)visIdx++;
+        if(visIdx<visemes.length&&visemes[visIdx].t-el<0.15)setMouthViseme(visemes[visIdx].v);
+        else setMouthViseme('X');
+      },50);
+      await new Promise((res2,rej)=>{ms.addEventListener('sourceopen',()=>{const sb=ms.addSourceBuffer('audio/mpeg');const reader=res.body.getReader();let started=false;(async()=>{try{for(;;){const{done,value}=await reader.read();if(done){if(ms.readyState==='open')ms.endOfStream();res2();return;}await new Promise(r3=>{sb.addEventListener('updateend',r3,{once:true});sb.appendBuffer(value);});if(!started){started=true;dinoAudio.play().catch(()=>{});}}}catch(e){rej(e);}})();},{once:true});});
+      clearInterval(visTimer); setMouthViseme('X'); hideSubtitle();
+    }
+
+    const DINO_SYSTEM = 'Eres Dino, un dinosaurio bebe bípedo verde y adorable. Hablas como un nino pequeno de 4 anos, con frases cortas, entusiasmo y mucha ternura. Te encanta jugar, hacer amigos, rugir suavecito (rawr) y aprender cosas nuevas. Eres muy curioso y preguntas mucho. Siempre respondes en español con carino y alegria. Usa emojis de dinosaurios y corazones. Tu frase favorita es "¡Rawr!".';
+
+    async function askDino(userMsg) {
+      if(_askBusy){append('Dino ocupado, espera...','think');return;}
+      _askBusy=true; _cancelAllAudio();
+      if(!OR_KEY){append('Falta OpenRouter Key. Pone tus keys en Lumi primero.','dino');_askBusy=false;return;}
+      append('Dino pensando...','think');
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+OR_KEY},
+          body:JSON.stringify({model:'google/gemma-4-26b-a4b-it',max_tokens:350,temperature:0.6,
+            messages:[{role:'system',content:DINO_SYSTEM},{role:'user',content:userMsg}]
+          })
+        });
+        document.querySelectorAll('.msg-think').forEach(e=>e.remove());
+        if(!res.ok){append('Error LLM: '+res.status,'dino');_askBusy=false;return;}
+        const data=await res.json();
+        const reply=data.choices?.[0]?.message?.content||'Rawr! No se que decir.';
+        append(reply,'dino');
+        await speak(reply);
+      } catch(e) { append('Error: '+e.message,'dino'); }
+      _askBusy=false;
+    }
+
+    function sendMsg() {
+      const txt=document.getElementById('mInput').value.trim();
+      if(!txt)return;
+      _cancelAllAudio();
+      append(txt,'user'); document.getElementById('mInput').value='';
+      askDino(txt);
+    }
+    document.getElementById('mSend').onclick=sendMsg;
+    document.getElementById('mInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
+
+    // ==================== RENDER ====================
+    function render(){requestAnimationFrame(render);controls.update();renderer.render(scene,camera);}
+    init3D().then(()=>render());
+    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  </script>
+</body>
+</html>

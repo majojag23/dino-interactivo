@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+  <defs>
+    <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1119"/><stop offset="1" stop-color="#16070b"/>
+    </linearGradient>
+    <linearGradient id="tongue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff8b78"/><stop offset="1" stop-color="#c9434b"/>
+    </linearGradient>
+    <linearGradient id="gum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ef796c"/><stop offset="1" stop-color="#ba3e48"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7"/><feOffset dy="6"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <ellipse cx="256" cy="143" rx="78" ry="91" fill="url(#lip)"/>
+    <ellipse cx="256" cy="171" rx="53" ry="39" fill="url(#tongue)"/>
+    <ellipse cx="256" cy="132" rx="65" ry="76" fill="none" stroke="#5e2028" stroke-width="9"/>
+  </g>
+</svg>

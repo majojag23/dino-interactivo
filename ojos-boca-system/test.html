@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dino - Ojos y Boca</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #111; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+    canvas { display: block; }
+
+    #loader {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: #ffcc00; font-size: 1.2em; z-index: 100;
+      background: rgba(0,0,0,0.8); padding: 16px 24px; border-radius: 10px;
+    }
+
+    #panel {
+      position: fixed; top: 8px; right: 8px; width: 300px; max-height: calc(100vh - 16px);
+      overflow-y: auto;
+      background: rgba(8, 18, 8, 0.94); border: 1px solid rgba(120, 200, 80, 0.35);
+      border-radius: 12px; padding: 10px; color: #eafffb; z-index: 50;
+      font-size: 11px;
+    }
+    #panel::-webkit-scrollbar { width: 4px; }
+    #panel::-webkit-scrollbar-thumb { background: rgba(120,200,80,0.3); border-radius: 2px; }
+
+    #panel h3 { color: #8fbc8f; margin: 0 0 6px 0; font-size: 14px; text-align: center; }
+
+    .section {
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 8px; margin-bottom: 8px;
+    }
+    .section h4 { color: #8fbc8f; margin: 0 0 4px 0; font-size: 11px; }
+
+    .row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+    .row label { min-width: 18px; color: #9ecab8; font-weight: 600; font-family: monospace; font-size: 11px; }
+    .row input[type="range"] { flex: 1; accent-color: #8fbc8f; height: 3px; }
+    .row .val { min-width: 38px; text-align: right; color: #8fbc8f; font-family: monospace; font-size: 10px; }
+
+    .btn-row { display: flex; gap: 5px; margin-top: 6px; }
+    .btn-row button {
+      padding: 4px 10px; border-radius: 6px; border: none;
+      font-weight: 600; font-size: 10px; cursor: pointer;
+    }
+    .btn-primary { background: #8fbc8f; color: #1a2a1a; }
+    .btn-primary:hover { filter: brightness(1.15); }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #eafffb; border: 1px solid rgba(120,200,80,0.25); }
+    .btn-secondary:hover { background: rgba(120,200,80,0.15); }
+
+    .info-row {
+      background: rgba(120,200,80,0.06); border: 1px solid rgba(120,200,80,0.15);
+      border-radius: 6px; padding: 5px 8px; margin-top: 6px; color: #7fa89f;
+      font-size: 9px; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">Cargando Dino...</div>
+
+  <div id="panel">
+    <h3>Ojos y Boca Dino</h3>
+
+    <div class="section">
+      <h4>Ojo Izquierdo</h4>
+      <div class="row"><label>X</label><input type="range" id="lx" min="-40" max="40" step="0.5" value="-9" /><span class="val" id="lxVal">-9.0</span></div>
+      <div class="row"><label>Y</label><input type="range" id="ly" min="-20" max="60" step="0.5" value="24" /><span class="val" id="lyVal">24.0</span></div>
+      <div class="row"><label>Z</label><input type="range" id="lz" min="20" max="300" step="1" value="150" /><span class="val" id="lzVal">150</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="ls" min="5" max="100" step="0.5" value="35" /><span class="val" id="lsVal">35.0</span></div>
+    </div>
+
+    <div class="section">
+      <h4>Ojo Derecho</h4>
+      <div class="row"><label>X</label><input type="range" id="rx" min="-40" max="40" step="0.5" value="9" /><span class="val" id="rxVal">9.0</span></div>
+      <div class="row"><label>Y</label><input type="range" id="ry" min="-20" max="60" step="0.5" value="24" /><span class="val" id="ryVal">24.0</span></div>
+      <div class="row"><label>Z</label><input type="range" id="rz" min="20" max="300" step="1" value="150" /><span class="val" id="rzVal">150</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="rs" min="5" max="100" step="0.5" value="35" /><span class="val" id="rsVal">35.0</span></div>
+    </div>
+
+    <div class="section">
+      <h4>Boca</h4>
+      <div class="row"><label>X</label><input type="range" id="mx" min="-30" max="30" step="0.5" value="0" /><span class="val" id="mxVal">0</span></div>
+      <div class="row"><label>Y</label><input type="range" id="my" min="-10" max="50" step="0.5" value="15" /><span class="val" id="myVal">15.0</span></div>
+      <div class="row"><label>Z</label><input type="range" id="mz" min="20" max="250" step="1" value="60" /><span class="val" id="mzVal">60</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="ms" min="5" max="80" step="0.5" value="25" /><span class="val" id="msVal">25.0</span></div>
+      <div class="row"><label>Cv</label><input type="range" id="cv" min="0" max="1" step="0.01" value="0.55" /><span class="val" id="cvVal">0.55</span></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="btnBlink">Parpadeo</button>
+      <button class="btn-secondary" id="btnCycle">Ciclar boca</button>
+      <button class="btn-secondary" id="btnSave">Guardar</button>
+    </div>
+    <div class="info-row">
+      Cargar un GLB de dino con hueso <b>Head</b>.<br>
+      Los overlays van sobre la malla (depthTest=false).
+    </div>
+  </div>
+
+  <script src="../libs/three.min.js"></script>
+  <script src="../libs/OrbitControls.js"></script>
+  <script src="../libs/GLTFLoader.js"></script>
+  <script src="../libs/DRACOLoader.js"></script>
+
+  <script>
+    // ===== CONFIG =====
+    const cfg = {
+      lx: -9, ly: 24, lz: 150, ls: 35,
+      rx: 9, ry: 24, rz: 150, rs: 35,
+      mx: 0, my: 15, mz: 60, ms: 25, cv: 0.55
+    };
+
+    // ===== THREE.JS =====
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2a3a2a);
+    scene.fog = new THREE.Fog(0x2a3a2a, 4, 20);
+
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 1.55, 2.4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.45, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.1;
+
+    scene.add(new THREE.HemisphereLight(0xeafffb, 0x2a3d3d, 1.3));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    sun.position.set(2, 3, 2); scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x88aaff, 0.6);
+    fill.position.set(-2, 2, -2); scene.add(fill);
+    scene.background = new THREE.Color(0x10131a);
+    scene.fog = new THREE.Fog(0x10131a, 10, 22);
+
+    const loader = new THREE.GLTFLoader();
+    if (typeof THREE.DRACOLoader !== 'undefined') {
+      const dracoLoader = new THREE.DRACOLoader();
+      dracoLoader.setDecoderPath('../libs/draco/');
+      loader.setDRACOLoader(dracoLoader);
+    }
+
+    // ===== EYE/MOUTH OVERLAYS =====
+    let dinoModel = null, headBone = null;
+    let eyeL = null, eyeR = null, eyeLAdj = null, eyeRAdj = null;
+    let mouth = null, mouthAdj = null;
+    let eyeTex = null, mouthTex = null;
+
+    function buildOverlay(w, h, texture, curve) {
+      const geo = new THREE.PlaneBufferGeometry(w, h, 8, 6);
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i) / (w/2);
+        const y = pos.getY(i) / (h/2);
+        pos.setZ(i, -curve * (x*x*0.6 + y*y*0.4));
+      }
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({
+        map: texture, transparent: true, roughness: 0.5,
+        depthTest: false, depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = 999;
+      mesh.frustumCulled = false;
+      return mesh;
+    }
+
+    function makeTex(color, w, h) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.ellipse(w/2, h/2, w*0.4, h*0.4, 0, 0, Math.PI*2); ctx.fill();
+      // Pupil
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.ellipse(w/2, h/2, w*0.12, h*0.12, 0, 0, Math.PI*2); ctx.fill();
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    function makeMouthTex(color, w, h) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.ellipse(w/2, h/2, w*0.35, h*0.25, 0, 0, Math.PI*2); ctx.fill();
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    function updatePositions() {
+      if (eyeLAdj) {
+        eyeLAdj.position.set(cfg.lx, cfg.ly, cfg.lz);
+        eyeLAdj.scale.setScalar(cfg.ls);
+      }
+      if (eyeRAdj) {
+        eyeRAdj.position.set(cfg.rx, cfg.ry, cfg.rz);
+        eyeRAdj.scale.setScalar(cfg.rs);
+      }
+      if (mouthAdj) {
+        mouthAdj.position.set(cfg.mx, cfg.my, cfg.mz);
+        mouthAdj.scale.setScalar(cfg.ms);
+      }
+      // Rebuild mouth curve
+      if (mouth) {
+        const geo = new THREE.PlaneBufferGeometry(1, 0.6, 8, 6);
+        const pos = geo.attributes.position;
+        const w = 1, h = 0.6;
+        for (let i = 0; i < pos.count; i++) {
+          const x = pos.getX(i) / (w/2);
+          const y = pos.getY(i) / (h/2);
+          pos.setZ(i, -cfg.cv * (x*x*0.6 + y*y*0.4));
+        }
+        geo.computeVertexNormals();
+        mouth.geometry.dispose();
+        mouth.geometry = geo;
+      }
+    }
+
+    function triggerBlink() {
+      if (!eyeL || !eyeR) return;
+      eyeL.material.opacity = 0.5;
+      eyeR.material.opacity = 0.5;
+      setTimeout(() => { eyeL.material.opacity = 0.1; eyeR.material.opacity = 0.1; }, 35);
+      setTimeout(() => { eyeL.material.opacity = 0.5; eyeR.material.opacity = 0.5; }, 75);
+      setTimeout(() => { eyeL.material.opacity = 1; eyeR.material.opacity = 1; }, 115);
+    }
+
+    // ===== CARGAR DINO =====
+    async function init() {
+      const GLB_PATH = '../assets/models/Meshy_AI_Mint_Dino_on_Magenta_biped_Character_output-optimized.glb';
+
+      eyeTex = makeTex('#ffcc00', 128, 128);
+      mouthTex = makeMouthTex('#8B0000', 128, 64);
+
+      let anchor;
+
+      if (GLB_PATH) {
+        const gltf = await new Promise((res, rej) => loader.load(GLB_PATH, res, undefined, rej));
+        dinoModel = gltf.scene;
+        dinoModel.traverse(n => { if (n.isMesh) n.frustumCulled = false; });
+        scene.add(dinoModel);
+        headBone = dinoModel.getObjectByName('Head');
+        anchor = headBone || dinoModel;
+        dinoModelHeadBone = headBone;
+      } else {
+        dinoModel = buildProceduralDino();
+        scene.add(dinoModel);
+        anchor = dinoModel;
+      }
+
+      anchor.updateWorldMatrix(true, false);
+      const align = anchor.getWorldQuaternion(new THREE.Quaternion()).inverse();
+
+      // Ojo izquierdo
+      eyeL = buildOverlay(1.8, 1.4, eyeTex, 0.14);
+      eyeLAdj = new THREE.Group();
+      eyeLAdj.position.set(cfg.lx, cfg.ly, cfg.lz);
+      eyeLAdj.scale.setScalar(cfg.ls);
+      eyeLAdj.add(eyeL);
+      const gL = new THREE.Group(); gL.quaternion.copy(align); gL.add(eyeLAdj);
+      anchor.add(gL);
+
+      // Ojo derecho
+      eyeR = buildOverlay(1.8, 1.4, eyeTex, 0.14);
+      eyeRAdj = new THREE.Group();
+      eyeRAdj.position.set(cfg.rx, cfg.ry, cfg.rz);
+      eyeRAdj.scale.setScalar(cfg.rs);
+      eyeRAdj.add(eyeR);
+      const gR = new THREE.Group(); gR.quaternion.copy(align); gR.add(eyeRAdj);
+      anchor.add(gR);
+
+      // Boca
+      mouth = buildOverlay(1.6, 1.0, mouthTex, cfg.cv);
+      mouthAdj = new THREE.Group();
+      mouthAdj.position.set(cfg.mx, cfg.my, cfg.mz);
+      mouthAdj.scale.setScalar(cfg.ms);
+      mouthAdj.add(mouth);
+      const gM = new THREE.Group(); gM.quaternion.copy(align); gM.add(mouthAdj);
+      anchor.add(gM);
+
+      document.getElementById('loader').style.display = 'none';
+
+      // Auto blink
+      setInterval(triggerBlink, 4000 + Math.random() * 5000);
+    }
+
+    function buildProceduralDino() {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0x4a8c4a, roughness: 0.5 });
+      const s = (r) => new THREE.SphereBufferGeometry(r, 16, 12);
+
+      const body = new THREE.Mesh(s(0.55), mat);
+      body.scale.set(1, 0.7, 1.5); body.position.y = 1.0; g.add(body);
+
+      const head = new THREE.Mesh(s(0.35), mat);
+      head.position.set(0, 1.6, 0.7); head.scale.set(1, 0.9, 1.1);
+      head.name = 'Head'; g.add(head);
+
+      const neck = new THREE.Mesh(new THREE.CylinderBufferGeometry(0.15, 0.22, 0.5, 10), mat);
+      neck.position.set(0, 1.3, 0.55); neck.rotation.x = -0.5; g.add(neck);
+
+      const tail = new THREE.Mesh(new THREE.CylinderBufferGeometry(0.15, 0.05, 1.0, 10), mat);
+      tail.position.set(0, 0.95, -1.0); tail.rotation.x = 0.7; g.add(tail);
+
+      for (let px of [-0.3, 0.3]) for (let pz of [0.3, -0.5]) {
+        const leg = new THREE.Group();
+        leg.add(new THREE.Mesh(new THREE.CylinderBufferGeometry(0.13, 0.11, 0.5, 10), mat));
+        const low = new THREE.Mesh(new THREE.CylinderBufferGeometry(0.11, 0.14, 0.4, 10), mat);
+        low.position.y = -0.6; leg.add(low);
+        const foot = new THREE.Mesh(s(0.1), mat);
+        foot.position.set(0, -0.85, 0.05); foot.scale.set(1.3, 0.4, 1.6); leg.add(foot);
+        leg.position.set(px, 0.45, pz); g.add(leg);
+      }
+
+      g.position.y = 0.65;
+      return g;
+    }
+
+    // ===== UI BINDINGS =====
+    const ids = { lx:'lx', ly:'ly', lz:'lz', ls:'ls', rx:'rx', ry:'ry', rz:'rz', rs:'rs', mx:'mx', my:'my', mz:'mz', ms:'ms', cv:'cv' };
+    Object.entries(ids).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      const valEl = document.getElementById(id + 'Val');
+      if (!el) return;
+      el.value = cfg[key];
+      if (valEl) valEl.textContent = cfg[key];
+      el.addEventListener('input', () => {
+        cfg[key] = parseFloat(el.value);
+        if (valEl) valEl.textContent = cfg[key];
+        updatePositions();
+      });
+    });
+
+    document.getElementById('btnBlink').onclick = triggerBlink;
+    document.getElementById('btnCycle').onclick = () => {
+      const colors = ['#8B0000','#cc3333','#ff6666','#8B0000','#cc3333'];
+      let i = 0;
+      const iv = setInterval(() => {
+        if (mouth && mouth.material.map) {
+          mouth.material.map = makeMouthTex(colors[i % colors.length], 128, 64);
+          mouth.material.needsUpdate = true;
+        }
+        i++;
+        if (i > 4) clearInterval(iv);
+      }, 150);
+    };
+    document.getElementById('btnSave').onclick = () => {
+      localStorage.setItem('dino_eyes_mouth', JSON.stringify(cfg));
+      alert('Guardado');
+    };
+
+    try {
+      const saved = JSON.parse(localStorage.getItem('dino_eyes_mouth'));
+      if (saved) Object.assign(cfg, saved);
+    } catch(e) {}
+
+    function render() {
+      requestAnimationFrame(render);
+      const t = performance.now() / 1000;
+      controls.update();
+      if (dinoModel) {
+        dinoModel.rotation.z = Math.sin(t * 1.5) * 0.03;
+        dinoModel.position.y = (dinoModel.position.y || 0.65) + Math.abs(Math.sin(t * 1.5)) * 0.01;
+      }
+      renderer.render(scene, camera);
+    }
+
+    init().then(() => render());
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>

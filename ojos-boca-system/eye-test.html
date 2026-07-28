@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dino - Ojo GLB</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #111; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+    canvas { display: block; }
+    #loader {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: #ff0; font-size: 1.2em; z-index: 100;
+      background: rgba(0,0,0,0.8); padding: 16px 24px; border-radius: 10px;
+    }
+    #panel {
+      position: fixed; top: 8px; right: 8px; width: 280px; max-height: calc(100vh - 16px);
+      overflow-y: auto;
+      background: rgba(8,18,8,0.94); border: 1px solid rgba(120,200,80,0.35);
+      border-radius: 12px; padding: 10px; color: #eafffb; z-index: 50; font-size: 11px;
+    }
+    #panel h3 { color: #8fbc8f; margin: 0 0 6px 0; font-size: 14px; text-align: center; }
+    .section { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+    .section h4 { color: #8fbc8f; margin: 0 0 4px 0; font-size: 11px; }
+    .row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+    .row label { min-width: 18px; color: #9ecab8; font-weight: 600; font-family: monospace; font-size: 11px; }
+    .row input[type="range"] { flex: 1; accent-color: #8fbc8f; height: 3px; }
+    .row .val { min-width: 38px; text-align: right; color: #8fbc8f; font-family: monospace; font-size: 10px; }
+    .btn-row { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+    .btn-row button {
+      padding: 4px 10px; border-radius: 6px; border: none;
+      font-weight: 600; font-size: 10px; cursor: pointer;
+    }
+    .btn-primary { background: #8fbc8f; color: #1a2a1a; }
+    .btn-primary:hover { filter: brightness(1.15); }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #eafffb; border: 1px solid rgba(120,200,80,0.25); }
+    .btn-secondary:hover { background: rgba(120,200,80,0.15); }
+    .btn-secondary.on { background: rgba(120,200,80,0.2); border-color: #8fbc8f; color: #8fbc8f; }
+  </style>
+</head>
+<body>
+  <div id="loader">Cargando Dino + Ojo...</div>
+
+  <div id="panel">
+    <h3>Ojo GLB en Dino</h3>
+
+    <div class="section">
+      <h4>Posición Ojo Izq</h4>
+      <div class="row"><label>X</label><input type="range" id="lx" min="-10" max="10" step="0.1" value="-0.5" /><span class="val" id="lxVal">-0.5</span></div>
+      <div class="row"><label>Y</label><input type="range" id="ly" min="-10" max="10" step="0.1" value="0.3" /><span class="val" id="lyVal">0.3</span></div>
+      <div class="row"><label>Z</label><input type="range" id="lz" min="-5" max="5" step="0.1" value="0.8" /><span class="val" id="lzVal">0.8</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="ls" min="0.01" max="3" step="0.01" value="0.3" /><span class="val" id="lsVal">0.30</span></div>
+      <div class="row"><label>RX</label><input type="range" id="lrx" min="-180" max="180" step="1" value="0" /><span class="val" id="lrxVal">0</span></div>
+      <div class="row"><label>RY</label><input type="range" id="lry" min="-180" max="180" step="1" value="0" /><span class="val" id="lryVal">0</span></div>
+      <div class="row"><label>RZ</label><input type="range" id="lrz" min="-180" max="180" step="1" value="0" /><span class="val" id="lrzVal">0</span></div>
+    </div>
+
+    <div class="section">
+      <h4>Posición Ojo Der</h4>
+      <div class="row"><label>X</label><input type="range" id="rx" min="-10" max="10" step="0.1" value="0.5" /><span class="val" id="rxVal">0.5</span></div>
+      <div class="row"><label>Y</label><input type="range" id="ry" min="-10" max="10" step="0.1" value="0.3" /><span class="val" id="ryVal">0.3</span></div>
+      <div class="row"><label>Z</label><input type="range" id="rz" min="-5" max="5" step="0.1" value="0.8" /><span class="val" id="rzVal">0.8</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="rs" min="0.01" max="3" step="0.01" value="0.3" /><span class="val" id="rsVal">0.30</span></div>
+      <div class="row"><label>RX</label><input type="range" id="rrx" min="-180" max="180" step="1" value="0" /><span class="val" id="rrxVal">0</span></div>
+      <div class="row"><label>RY</label><input type="range" id="rry" min="-180" max="180" step="1" value="0" /><span class="val" id="rryVal">0</span></div>
+      <div class="row"><label>RZ</label><input type="range" id="rrz" min="-180" max="180" step="1" value="0" /><span class="val" id="rrzVal">0</span></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="btnBlink">Parpadeo</button>
+      <button class="btn-secondary on" id="btnAutoBlink">Auto</button>
+      <button class="btn-secondary" id="btnSave">Guardar</button>
+    </div>
+  </div>
+
+  <script src="../libs/three.min.js"></script>
+  <script src="../libs/OrbitControls.js"></script>
+  <script src="../libs/GLTFLoader.js"></script>
+  <script src="../libs/DRACOLoader.js"></script>
+
+  <script>
+    const loader = new THREE.GLTFLoader();
+    if (typeof THREE.DRACOLoader !== 'undefined') {
+      const dracoLoader = new THREE.DRACOLoader();
+      dracoLoader.setDecoderPath('../libs/draco/');
+      loader.setDRACOLoader(dracoLoader);
+    }
+
+    const cfg = {
+      lx: -0.5, ly: 0.3, lz: 0.8, ls: 0.3, lrx: 0, lry: 0, lrz: 0,
+      rx: 0.5, ry: 0.3, rz: 0.8, rs: 0.3, rrx: 0, rry: 0, rrz: 0
+    };
+
+    let autoBlink = true;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2a4a2a);
+    scene.fog = new THREE.Fog(0x2a4a2a, 4, 15);
+
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 1.5, 4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.0, 0);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.HemisphereLight(0xeafffb, 0x2a3d3d, 1.3));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    sun.position.set(2, 3, 2); scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x88aaff, 0.6);
+    fill.position.set(-2, 2, -2); scene.add(fill);
+
+    const D2R = Math.PI / 180;
+
+    let dino = null, headBone = null;
+    let eyeLeft = null, eyeRight = null;
+    let eyeLg = null, eyeRg = null;
+    let eyeBaseScaleY = 0.3;
+
+    async function init() {
+      const DINO_PATH = '../assets/models/Meshy_AI_Mint_Dino_on_Magenta_biped_Character_output-optimized.glb';
+      const EYE_PATH = '../assets/models/Meshy_AI_Neon_Eye_0728004936_texture-optimized.glb';
+
+      const [dinoGltf, eyeGltf] = await Promise.all([
+        new Promise((res, rej) => loader.load(DINO_PATH, res, undefined, rej)),
+        new Promise((res, rej) => loader.load(EYE_PATH, res, undefined, rej))
+      ]);
+
+      // Dino
+      dino = dinoGltf.scene;
+      dino.traverse(n => { if (n.isMesh) n.frustumCulled = false; });
+      scene.add(dino);
+      dino.updateWorldMatrix(true, false);
+      const bbox = new THREE.Box3().setFromObject(dino);
+      dino.position.set(0, -bbox.min.y, 0);
+      headBone = dino.getObjectByName('Head');
+      const anchor = headBone || dino;
+
+      // Eye model
+      const eyeModel = eyeGltf.scene;
+
+      // Left eye
+      eyeLeft = eyeModel.clone(true);
+      eyeLg = new THREE.Group();
+      eyeLg.position.set(cfg.lx, cfg.ly, cfg.lz);
+      eyeLg.scale.setScalar(cfg.ls);
+      eyeLg.rotation.set(cfg.lrx*Math.PI/180, cfg.lry*Math.PI/180, cfg.lrz*Math.PI/180);
+      eyeLg.add(eyeLeft);
+      anchor.add(eyeLg);
+
+      // Right eye
+      eyeRight = eyeModel.clone(true);
+      eyeRg = new THREE.Group();
+      eyeRg.position.set(cfg.rx, cfg.ry, cfg.rz);
+      eyeRg.scale.setScalar(cfg.rs);
+      eyeRg.rotation.set(cfg.rrx*Math.PI/180, cfg.rry*Math.PI/180, cfg.rrz*Math.PI/180);
+      eyeRg.add(eyeRight);
+      anchor.add(eyeRg);
+
+      eyeBaseScaleY = cfg.ls;
+      document.getElementById('loader').style.display = 'none';
+
+      scheduleAutoBlink();
+    }
+
+    function updatePositions() {
+      const D2R = Math.PI / 180;
+      if (eyeLg) {
+        eyeLg.position.set(cfg.lx, cfg.ly, cfg.lz);
+        eyeLg.scale.setScalar(cfg.ls);
+        eyeLg.rotation.set(cfg.lrx*D2R, cfg.lry*D2R, cfg.lrz*D2R);
+      }
+      if (eyeRg) {
+        eyeRg.position.set(cfg.rx, cfg.ry, cfg.rz);
+        eyeRg.scale.setScalar(cfg.rs);
+        eyeRg.rotation.set(cfg.rrx*D2R, cfg.rry*D2R, cfg.rrz*D2R);
+      }
+    }
+
+    // Blink animation via scale Y squash
+    function triggerBlink() {
+      if (!eyeLeft || !eyeRight) return;
+      const origL = eyeLeft.scale.y;
+      const origR = eyeRight.scale.y;
+      eyeLeft.scale.y = 0.3;  // mid
+      eyeRight.scale.y = 0.3;
+      setTimeout(() => { eyeLeft.scale.y = 0.05; eyeRight.scale.y = 0.05; }, 35);
+      setTimeout(() => { eyeLeft.scale.y = 0.3; eyeRight.scale.y = 0.3; }, 75);
+      setTimeout(() => { eyeLeft.scale.y = origL; eyeRight.scale.y = origR; }, 115);
+    }
+
+    function scheduleAutoBlink() {
+      if (!autoBlink) return;
+      const delay = 3000 + Math.random() * 5000;
+      setTimeout(() => { triggerBlink(); scheduleAutoBlink(); }, delay);
+    }
+
+    // UI
+    const ids = { lx:'lx', ly:'ly', lz:'lz', ls:'ls', lrx:'lrx', lry:'lry', lrz:'lrz', rx:'rx', ry:'ry', rz:'rz', rs:'rs', rrx:'rrx', rry:'rry', rrz:'rrz' };
+    Object.entries(ids).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      const valEl = document.getElementById(id+'Val');
+      if (!el) return;
+      el.value = cfg[key];
+      if (valEl) valEl.textContent = cfg[key].toFixed(key.startsWith('lr')||key.startsWith('rr')?0:2);
+      el.addEventListener('input', () => {
+        cfg[key] = parseFloat(el.value);
+        if (valEl) valEl.textContent = parseFloat(el.value).toFixed(key.startsWith('lr')||key.startsWith('rr')?0:2);
+        updatePositions();
+      });
+    });
+
+    document.getElementById('btnBlink').onclick = triggerBlink;
+    document.getElementById('btnAutoBlink').onclick = function() {
+      autoBlink = !autoBlink;
+      this.classList.toggle('on', autoBlink);
+      this.textContent = autoBlink ? 'Auto' : 'Off';
+      if (autoBlink) scheduleAutoBlink();
+    };
+    document.getElementById('btnSave').onclick = () => {
+      localStorage.setItem('dino_eye_glb', JSON.stringify(cfg));
+    };
+
+    try {
+      const s = JSON.parse(localStorage.getItem('dino_eye_glb'));
+      if (s) Object.assign(cfg, s);
+    } catch(e) {}
+
+    function render() {
+      requestAnimationFrame(render);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    init().then(() => render());
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>

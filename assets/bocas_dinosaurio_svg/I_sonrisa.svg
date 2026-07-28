@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+  <defs>
+    <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1119"/><stop offset="1" stop-color="#16070b"/>
+    </linearGradient>
+    <linearGradient id="tongue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff8b78"/><stop offset="1" stop-color="#c9434b"/>
+    </linearGradient>
+    <linearGradient id="gum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ef796c"/><stop offset="1" stop-color="#ba3e48"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7"/><feOffset dy="6"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <path d="M76 119 Q256 164 436 119 Q393 173 256 176 Q119 173 76 119Z" fill="url(#lip)"/>
+    <path d="M119 126 Q256 153 393 126 Q367 146 256 150 Q145 146 119 126Z" fill="#fff3df"/>
+    <path d="M150 151 Q256 139 362 151 Q328 169 256 169 Q184 169 150 151Z" fill="url(#tongue)"/>
+  </g>
+</svg>

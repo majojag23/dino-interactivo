@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Dino</title>
+  <link rel="preload" as="fetch" href="assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Character_output-optimized.glb" crossorigin="anonymous" />
+  <link rel="preload" as="script" href="libs/three.min.js" />
+  <link rel="preload" as="script" href="libs/GLTFLoader.js" />
+  <link rel="preload" as="script" href="libs/OrbitControls.js" />
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #1a2a1a; font-family: 'Segoe UI', Roboto, sans-serif; }
+    canvas { display: block; }
+    #mobileBg { position: fixed; inset: 0; z-index: 0; background: linear-gradient(180deg, #3a7a3a 0%, #5a9a5a 55%, #aadda0 100%); }
+    #loader { position: fixed; inset: 0; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; transition: opacity 0.5s; }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    #loader .spinner { width: 50px; height: 50px; border: 4px solid #333; border-top: 4px solid #8fbc8f; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    :root { --mFrame: min(480px, 100vw); }
+    #mHeader { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: var(--mFrame); z-index: 20; display: flex; align-items: flex-start; gap: 12px; padding: max(14px, env(safe-area-inset-top)) 16px 0; pointer-events: none; }
+    #mTitle { flex: 1; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+    #mTitle h1 { margin: 6px 0 0; font-size: 20px; font-weight: 800; }
+    body > canvas { position: fixed !important; inset: 0; z-index: 1; width: 100% !important; height: 100% !important; }
+    #mSubtitle { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%) translateY(10px); width: max-content; max-width: min(400px, calc(var(--mFrame) - 40px)); padding: 10px 18px; background: rgba(255,255,255,0.95); color: #234; border-radius: 16px; font-size: 15px; font-weight: 600; text-align: center; opacity: 0; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: opacity .25s, transform .25s; z-index: 25; }
+    #mSubtitle.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #mBottom { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 20; width: var(--mFrame); padding: 8px 14px max(14px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+    #mChatLog { max-height: 120px; overflow-y: auto; margin-bottom: 4px; font-size: 12px; display: flex; flex-direction: column; }
+    .msg { padding: 5px 10px; border-radius: 10px; font-size: 12px; max-width: 80%; word-wrap: break-word; margin-bottom: 3px; line-height: 1.4; }
+    .msg-user { background: #8fbc8f; color: #1a2a1a; align-self: flex-end; }
+    .msg-dino { background: rgba(255,255,255,0.9); color: #234; align-self: flex-start; }
+    .msg-think { color: #5a7a5a; font-style: italic; font-size: 11px; align-self: flex-start; }
+    .msg-error { color: #c44; font-size: 11px; align-self: flex-start; }
+    #mInputBar { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 26px; padding: 6px 6px 6px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    #mInput { flex: 1; border: none; outline: none; font-size: 14px; color: #234; background: transparent; }
+    #mInput::placeholder { color: #9fb3bd; }
+    #mSend { width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0; background: #8fbc8f; color: #fff; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .12s; }
+    #mSend:active { transform: scale(0.92); }
+    #mMic { width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0; background: #ffd23f; color: #7a4b00; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .12s, background .15s; }
+    #mMic:active { transform: scale(0.92); }
+    #mMic.recording { background: #ff6b6b; color: #fff; animation: mpulse 1s infinite; }
+    @keyframes mpulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+    #mWave { display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 26px; }
+    #mWave span { width: 3px; border-radius: 2px; background: rgba(255,255,255,0.7); height: 4px; transition: height .09s; }
+    #mNav { position: fixed; right: max(14px, calc((100vw - 480px) / 2 + 14px)); top: 50%; transform: translateY(-50%); z-index: 20; display: flex; flex-direction: column; gap: 14px; }
+    .navItem { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; }
+    .navCircle { width: 44px; height: 44px; border-radius: 50%; background: #fff; border: 3px solid #8fbc8f; display: flex; align-items: center; justify-content: center; font-size: 19px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform .12s; }
+    .navItem:active .navCircle { transform: scale(0.92); }
+    .navLabel { color: #fff; font-size: 10px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  </style>
+</head>
+<body>
+  <div id="mobileBg"></div>
+  <div id="loader"><div class="spinner"></div><p>Cargando Dino...</p></div>
+  <div id="mSubtitle"></div>
+  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖</h1></div></div>
+  <div id="mNav">
+    <button class="navItem" id="navWave"><span class="navCircle">👋</span><span class="navLabel">Ola</span></button>
+      <button class="navItem" id="navIdle"><span class="navCircle">🧍</span><span class="navLabel">Parado</span></button>
+    <button class="navItem" id="navWalk"><span class="navCircle">🚶</span><span class="navLabel">Andar</span></button>
+  </div>
+  <div id="mBottom">
+    <div id="mWave"></div>
+    <div id="mChatLog"></div>
+    <div id="mInputBar">
+      <input id="mInput" type="text" placeholder="Escribe algo o preguntale a Dino" />
+      <button id="mMic" aria-label="Micrófono">🎤</button>
+      <button id="mSend" aria-label="Enviar">→</button>
+    </div>
+  </div>
+  <audio id="dinoAudio"></audio>
+
+  <script src="libs/three.min.js"></script>
+  <script src="libs/OrbitControls.js"></script>
+  <script src="libs/GLTFLoader.js"></script>
+  <script src="libs/DRACOLoader.js"></script>
+  <script>
+    // ===== 3D SETUP =====
+    const scene = new THREE.Scene(); scene.background = null;
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100); camera.position.set(0, 1.5, 4);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(innerWidth, innerHeight); document.body.appendChild(renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement); controls.target.set(0, 1, 0); controls.enableDamping = true;
+    scene.add(new THREE.HemisphereLight(0xeafffb, 0x2a3d3d, 1.3));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(2, 3, 2); scene.add(sun);
+    scene.add(new THREE.DirectionalLight(0x88aaff, 0.6).translateX(-2).translateY(2).translateZ(-2));
+
+    const loader = new THREE.GLTFLoader();
+    const dc = new THREE.DRACOLoader(); dc.setDecoderPath('libs/draco/'); loader.setDRACOLoader(dc);
+    let dinoModel, headBone, eyeL, eyeR, mouth, mouthTex = {}, dinoMixer, dinoActions = {};
+    const D2R = Math.PI/180;
+
+    const EYE_L  = { x: -32.2, y: 50.6, z: 18.4, s: 25.3, rx: -25, ry: -25, rz: 4, cv: 0.55 };
+    const EYE_R  = { x: 32.2, y: 50.6, z: 18.4, s: 25.3, rx: -25, ry: 25, rz: 4, cv: 0.39 };
+    const MOUTH  = { x: 2.2, y: 25.3, z: 40, s: 29.89, rx: 0, ry: 0, rz: 0 };
+    const MOUTH_F = {
+      X:'assets/bocas_dinosaurio_sin_labios_transparentes/X_boca_cerrada.png?v=2', A:'assets/bocas_dinosaurio_sin_labios_transparentes/A_boca_abierta_ah.png?v=2',
+      B:'assets/bocas_dinosaurio_sin_labios_transparentes/B_boca_m_p_b.png?v=2', C:'assets/bocas_dinosaurio_sin_labios_transparentes/C_boca_eh.png?v=2',
+      D:'assets/bocas_dinosaurio_sin_labios_transparentes/D_boca_ah_grande.png?v=2', E:'assets/bocas_dinosaurio_sin_labios_transparentes/E_boca_oh_redonda.png?v=2',
+      F:'assets/bocas_dinosaurio_sin_labios_transparentes/F_boca_oo_u.png?v=2', G:'assets/bocas_dinosaurio_sin_labios_transparentes/G_dientes_f_v.png?v=2',
+    };
+
+    function loadTex(u) { return new Promise((R,J)=>{ const i=new Image(); i.onload=()=>{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height; c.getContext('2d').drawImage(i,0,0); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.minFilter=THREE.LinearFilter; R(t); }; i.onerror=J; i.src=u; }); }
+    function setViseme(c) { if(mouth&&mouthTex[c]){mouth.material.map=mouthTex[c];mouth.material.needsUpdate=true;} }
+    function makeEye(t,C,a){ const g=new THREE.PlaneBufferGeometry(1.8,1.4,12,8); const p=g.attributes.position; for(let i=0;i<p.count;i++){const x=p.getX(i)/0.9,y=p.getY(i)/0.7;p.setZ(i,-(C.cv||0.14)*(x*x*0.6+y*y*0.4));} g.computeVertexNormals(); const m=new THREE.MeshStandardMaterial({map:t,transparent:true,roughness:0.5,depthTest:false,depthWrite:false}); const M=new THREE.Mesh(g,m); M.renderOrder=999;M.frustumCulled=false;M.visible=true; const A=new THREE.Group(); A.position.set(C.x,C.y,C.z);A.scale.setScalar(C.s);A.rotation.set(C.rx*D2R,C.ry*D2R,C.rz*D2R);A.add(M);a.add(A);return M; }
+
+    async function init3D() {
+      const B='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Character_output-optimized.glb';
+      const W='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Walking_withSkin-optimized.glb';
+      const V='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Wave_One_Hand_withSkin-optimized.glb';
+      const EL='assets/ojos/ojo_cerrado_izquierdo_imagen.png', ER='assets/ojos/ojo_cerrado_derecho_imagen.png';
+      const me=Object.entries(MOUTH_F);
+      const [bG,wG,vG,eLT,eRT,...mL]=await Promise.all([
+        new Promise((res,rej)=>loader.load(B,res,undefined,rej)),
+        new Promise((res,rej)=>loader.load(W,res,undefined,rej)),
+        new Promise((res,rej)=>loader.load(V,res,undefined,rej)),
+        loadTex(EL),loadTex(ER),...me.map(([,u])=>loadTex(u))
+      ]);
+      me.forEach(([c],i)=>{mouthTex[c]=mL[i];});
+      dinoModel=bG.scene; dinoModel.traverse(n=>{if(n.isMesh)n.frustumCulled=false;}); scene.add(dinoModel);
+      dinoModel.updateWorldMatrix(true,false); dinoModel.position.set(0,-new THREE.Box3().setFromObject(dinoModel).min.y,0);
+      headBone=dinoModel.getObjectByName('Head'); const a=headBone||dinoModel; a.updateWorldMatrix(true,false);
+      eyeL=makeEye(eLT,EYE_L,a); eyeR=makeEye(eRT,EYE_R,a);
+      const as=mouthTex.X?.image?.width/mouthTex.X?.image?.height||2; const mw=1.6,mh=1.6/as;
+      const mg=new THREE.PlaneBufferGeometry(mw,mh,20,14); mg.computeVertexNormals();
+      mouth=new THREE.Mesh(mg,new THREE.MeshStandardMaterial({map:mouthTex.X,transparent:true,roughness:0.6,depthTest:false,depthWrite:false}));
+      mouth.renderOrder=999;mouth.frustumCulled=false; const mG=new THREE.Group();
+      mG.position.set(MOUTH.x,MOUTH.y,MOUTH.z);mG.scale.setScalar(MOUTH.s);mG.rotation.set(MOUTH.rx*D2R,MOUTH.ry*D2R,MOUTH.rz*D2R);mG.add(mouth);a.add(mG);
+
+      dinoMixer=new THREE.AnimationMixer(dinoModel);
+      [['idle',bG],['walk',wG],['wave',vG]].forEach(([n,g])=>{if(g.animations[0]){dinoActions[n]=dinoMixer.clipAction(g.animations[0]);dinoActions[n].enabled=true;}});
+      if(dinoActions.idle)dinoActions.idle.play();
+
+      function blink(){if(eyeL)eyeL.visible=true;if(eyeR)eyeR.visible=true;setTimeout(()=>{if(eyeL)eyeL.visible=false;if(eyeR)eyeR.visible=false;},130);setTimeout(blink,3000+Math.random()*5000);}
+      blink();
+      document.getElementById('loader').classList.add('hidden');
+    }
+
+    // ===== CHAT + LLM + TTS =====
+    const dinoAudio=document.getElementById('dinoAudio');
+    let OR_KEY='__proxy__',EL_KEY='__proxy__',EL_VOICE='__proxy__';
+    let _busy=false;
+
+    function _cancel() { try { if(dinoAudio&&!dinoAudio.paused){dinoAudio.pause();dinoAudio.currentTime=0;} if('speechSynthesis' in window)speechSynthesis.cancel(); setViseme('X'); hideSub(); } catch(e){} }
+    function add(m,c){ const d=document.createElement('div'); d.textContent=m; d.className='msg msg-'+c; document.getElementById('mChatLog').appendChild(d); d.scrollIntoView(false); }
+    function showSub(t){ const s=document.getElementById('mSubtitle'); s.textContent=t; s.classList.add('visible'); }
+    function hideSub(){ document.getElementById('mSubtitle').classList.remove('visible'); }
+
+    function visemes(text) {
+      const s=[]; let pos=0, total=0;
+      const chars=Array.from(text.toLowerCase());
+      const marks=chars.map(c=>{
+        let v='X';
+        if('aá'.includes(c))v='A';
+        else if('eé'.includes(c))v='C';
+        else if('ií'.includes(c))v='B';
+        else if('oó'.includes(c))v='E';
+        else if('uú'.includes(c))v='F';
+        else if('pbm'.includes(c))v='B';
+        else if('fv'.includes(c))v='G';
+        else if(' .,!?¡¿'.includes(c))v='|';
+        return v;
+      });
+      marks.forEach(v=>{ if(v==='|')total++; else total++; });
+      let idx=0;
+      marks.forEach((v,i)=>{
+        if(v==='|'||v==='X')return;
+        const norm=i/Math.max(marks.length,1);
+        s.push({n:norm,v});
+      });
+      return s;
+    }
+
+    async function speak(text) {
+      _cancel(); showSub(text);
+      if(!EL_KEY){add('Falta ElevenLabs Key','dino');hideSub();return;}
+
+      const res=await fetch('/api/tts-el',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text})
+      });
+      if(!res.ok||!res.body){add('Error TTS','dino');hideSub();return;}
+
+      const ms=new MediaSource(); dinoAudio.src=URL.createObjectURL(ms);
+      const vm=visemes(text); let vi=0, vs=0, vt=null, started=false;
+
+      function startVisTimer() {
+        if(started)return; started=true;
+        const dur=()=>dinoAudio.duration&&isFinite(dinoAudio.duration)?dinoAudio.duration:0;
+        vs=performance.now()/1000;
+        vt=setInterval(()=>{
+          if(dinoAudio.paused||dinoAudio.ended){clearInterval(vt);setViseme('X');return;}
+          const el=performance.now()/1000-vs;
+          const D=dur();
+          if(D<=0){ setViseme(vm[0]?vm[0].v:'X'); return; }
+          const elN=el/D;
+          while(vi<vm.length&&vm[vi].n<=elN)vi++;
+          const cur=vi<vm.length?vi:vm.length-1;
+          if(cur>=0&&vm[cur])setViseme(vm[cur].v); else setViseme('X');
+        },50);
+      }
+
+      dinoAudio.onplay=startVisTimer;
+      dinoAudio.onended=()=>{if(vt)clearInterval(vt);setViseme('X');hideSub();};
+      dinoAudio.onerror=()=>{if(vt)clearInterval(vt);setViseme('X');hideSub();};
+
+      await new Promise((R2,J2)=>{ms.addEventListener('sourceopen',()=>{const sb=ms.addSourceBuffer('audio/mpeg');const rd=res.body.getReader();let st=false;(async()=>{try{for(;;){const{done,value}=await rd.read();if(done){if(ms.readyState==='open')ms.endOfStream();R2();return;}await new Promise(r3=>{sb.addEventListener('updateend',r3,{once:true});sb.appendBuffer(value);});if(!st){st=true;dinoAudio.play().then(()=>startVisTimer()).catch(()=>{});}}}catch(e){J2(e);}})();},{once:true});});
+    }
+
+    async function ask(text) {
+      if(_busy){add('Espera un momento...','think');return;}
+      _busy=true; _cancel();
+      if(!OR_KEY){add('Falta OpenRouter Key','error');_busy=false;return;}
+      add('Dino pensando...','think');
+      try {
+        // El servidor (/api/chat) hace de proxy a OpenRouter con la or_key
+        // encriptada server-side: el navegador nunca ve la clave.
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 15000);
+        const r = await fetch('/api/chat', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({text}), signal: ctrl.signal
+        });
+        clearTimeout(timeout);
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        const reply = d.reply;
+        if (!reply) throw new Error(d.error || 'sin contenido');
+        document.querySelectorAll('.msg-think').forEach(e=>e.remove());
+        add(reply,'dino'); await speak(reply);
+      }catch(e){
+        document.querySelectorAll('.msg-think').forEach(e=>e.remove());
+        add('Error: '+(e.errors?e.errors.map(x=>x.message).join('|'):e.message),'error');
+      }
+      _busy=false;
+    }
+
+    function send() {
+      const t=document.getElementById('mInput').value.trim();
+      if(!t)return; _cancel();
+      add(t,'user'); document.getElementById('mInput').value=''; ask(t);
+    }
+    document.getElementById('mSend').onclick=send;
+    document.getElementById('mInput').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+
+    // Nav buttons
+    document.getElementById('navWave').onclick=()=>{if(dinoActions.wave){Object.values(dinoActions).forEach(a=>a.stop());dinoActions.wave.reset().play();}};
+    document.getElementById('navWalk').onclick=()=>{if(dinoActions.walk){Object.values(dinoActions).forEach(a=>a.stop());dinoActions.walk.reset().play();}};
+    document.getElementById('navIdle').onclick=()=>{if(dinoActions.idle){Object.values(dinoActions).forEach(a=>a.stop());dinoActions.idle.reset().play();}};
+
+    // Waveform
+    const waveEl=document.getElementById('mWave'); for(let i=0;i<26;i++){const s=document.createElement('span');waveEl.appendChild(s);}
+    const bars=waveEl.querySelectorAll('span');
+    function tickWave(){requestAnimationFrame(tickWave);const t=performance.now()/1000;for(let i=0;i<bars.length;i++)bars[i].style.height=(4+Math.abs(Math.sin(t*4+i*0.3))*10)+'px';}
+    tickWave();
+
+    // Microphone
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null, listening = false, micLog = null;
+
+    function initMic() {
+      if (!SpeechRecognition) return;
+      const rec = new SpeechRecognition();
+      rec.lang = 'es-ES'; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 1;
+      let handled = false;
+
+      rec.onstart = () => {
+        listening = true; handled = false;
+        document.getElementById('mMic').classList.add('recording');
+        if (micLog) micLog.remove();
+        micLog = document.createElement('div'); micLog.className = 'msg msg-think'; micLog.textContent = '🎤 Escuchando...';
+        document.getElementById('mChatLog').appendChild(micLog); micLog.scrollIntoView(false);
+      };
+      rec.onresult = (e) => {
+        const last = e.results[e.results.length-1];
+        const txt = last[0].transcript.trim(); if (!txt) return;
+        document.getElementById('mInput').value = txt;
+        if (last.isFinal && !handled) {
+          handled = true; if (micLog) { micLog.remove(); micLog = null; }
+          document.getElementById('mInput').value = txt; send();
+        }
+      };
+      rec.onerror = (e) => {
+        if (micLog) { micLog.remove(); micLog = null; }
+        listening = false; document.getElementById('mMic').classList.remove('recording');
+        add('Mic: '+e.error,'error');
+      };
+      rec.onend = () => {
+        if (micLog) { micLog.remove(); micLog = null; }
+        listening = false; document.getElementById('mMic').classList.remove('recording');
+      };
+      return rec;
+    }
+
+    document.getElementById('mMic').onclick = () => {
+      if (!SpeechRecognition) { add('Microfono no soportado','error'); return; }
+      if (listening && recognition) { try { recognition.stop(); } catch(e) {} return; }
+      try { if (recognition) recognition.abort(); } catch(e) {}
+      recognition = initMic(); if (recognition) recognition.start();
+    };
+
+    const clock=new THREE.Clock();
+    function render(){requestAnimationFrame(render);controls.update();if(dinoMixer)dinoMixer.update(clock.getDelta());renderer.render(scene,camera);}
+    init3D().then(()=>render());
+    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  </script>
+</body>
+</html>

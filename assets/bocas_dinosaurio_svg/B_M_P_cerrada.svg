@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+  <defs>
+    <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1119"/><stop offset="1" stop-color="#16070b"/>
+    </linearGradient>
+    <linearGradient id="tongue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff8b78"/><stop offset="1" stop-color="#c9434b"/>
+    </linearGradient>
+    <linearGradient id="gum" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ef796c"/><stop offset="1" stop-color="#ba3e48"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7"/><feOffset dy="6"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".28"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <path d="M130 127 Q256 157 382 127 Q347 157 256 160 Q165 157 130 127Z" fill="#351016"/>
+    <path d="M145 126 Q256 145 367 126" fill="none" stroke="#5d2027" stroke-width="13" stroke-linecap="round"/>
+    <path d="M165 137 Q256 151 347 137" fill="none" stroke="#8b3840" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+  </g>
+</svg>

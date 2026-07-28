@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dino - Ojos y Boca</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #111; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+    canvas { display: block; }
+
+    #loader {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: #ffcc00; font-size: 1.2em; z-index: 100;
+      background: rgba(0,0,0,0.8); padding: 16px 24px; border-radius: 10px;
+    }
+
+    #panel {
+      position: fixed; top: 8px; right: 8px; width: 300px; max-height: calc(100vh - 16px);
+      overflow-y: auto;
+      background: rgba(8, 18, 8, 0.94); border: 1px solid rgba(120, 200, 80, 0.35);
+      border-radius: 12px; padding: 10px; color: #eafffb; z-index: 50;
+      font-size: 11px;
+    }
+    #panel::-webkit-scrollbar { width: 4px; }
+    #panel::-webkit-scrollbar-thumb { background: rgba(120,200,80,0.3); border-radius: 2px; }
+
+    #panel h3 { color: #8fbc8f; margin: 0 0 6px 0; font-size: 14px; text-align: center; }
+
+    .section {
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      padding: 8px; margin-bottom: 8px;
+    }
+    .section h4 { color: #8fbc8f; margin: 0 0 4px 0; font-size: 11px; }
+
+    .row { display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+    .row label { min-width: 18px; color: #9ecab8; font-weight: 600; font-family: monospace; font-size: 11px; }
+    .row input[type="range"] { flex: 1; accent-color: #8fbc8f; height: 3px; }
+    .row .val { min-width: 38px; text-align: right; color: #8fbc8f; font-family: monospace; font-size: 10px; }
+
+    .btn-row { display: flex; gap: 5px; margin-top: 6px; }
+    .btn-row button {
+      padding: 4px 10px; border-radius: 6px; border: none;
+      font-weight: 600; font-size: 10px; cursor: pointer;
+    }
+    .btn-primary { background: #8fbc8f; color: #1a2a1a; }
+    .btn-primary:hover { filter: brightness(1.15); }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #eafffb; border: 1px solid rgba(120,200,80,0.25); }
+    .btn-secondary:hover { background: rgba(120,200,80,0.15); }
+
+    .info-row {
+      background: rgba(120,200,80,0.06); border: 1px solid rgba(120,200,80,0.15);
+      border-radius: 6px; padding: 5px 8px; margin-top: 6px; color: #7fa89f;
+      font-size: 9px; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">Cargando Dino...</div>
+
+  <div id="panel">
+    <h3>Ojos y Boca Dino</h3>
+
+    <div class="section">
+      <h4>Ojo Izquierdo</h4>
+      <div class="row"><label>X</label><input type="range" id="lx" min="-200" max="200" step="0.1" value="-0.5" /><span class="val" id="lxVal">-0.5</span></div>
+      <div class="row"><label>Y</label><input type="range" id="ly" min="-200" max="200" step="0.1" value="0" /><span class="val" id="lyVal">0.0</span></div>
+      <div class="row"><label>Z</label><input type="range" id="lz" min="0" max="200" step="0.1" value="1.0" /><span class="val" id="lzVal">1.0</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="ls" min="0.01" max="400" step="0.01" value="150" /><span class="val" id="lsVal">150.00</span></div>
+      <div class="row"><label>RX</label><input type="range" id="lrx" min="-360" max="360" step="1" value="0" /><span class="val" id="lrxVal">0</span></div>
+      <div class="row"><label>RY</label><input type="range" id="lry" min="-360" max="360" step="1" value="0" /><span class="val" id="lryVal">0</span></div>
+      <div class="row"><label>RZ</label><input type="range" id="lrz" min="-360" max="360" step="1" value="0" /><span class="val" id="lrzVal">0</span></div>
+      <div class="row"><label>Cv</label><input type="range" id="lec" min="0" max="2" step="0.01" value="0.14" /><span class="val" id="lecVal">0.14</span></div>
+    </div>
+
+    <div class="section">
+      <h4>Ojo Derecho</h4>
+      <div class="row"><label>X</label><input type="range" id="rx" min="-200" max="200" step="0.1" value="0.5" /><span class="val" id="rxVal">0.5</span></div>
+      <div class="row"><label>Y</label><input type="range" id="ry" min="-200" max="200" step="0.1" value="0" /><span class="val" id="ryVal">0.0</span></div>
+      <div class="row"><label>Z</label><input type="range" id="rz" min="0" max="200" step="0.1" value="1.0" /><span class="val" id="rzVal">1.0</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="rs" min="0.01" max="400" step="0.01" value="150" /><span class="val" id="rsVal">150.00</span></div>
+      <div class="row"><label>RX</label><input type="range" id="rrx" min="-360" max="360" step="1" value="0" /><span class="val" id="rrxVal">0</span></div>
+      <div class="row"><label>RY</label><input type="range" id="rry" min="-360" max="360" step="1" value="0" /><span class="val" id="rryVal">0</span></div>
+      <div class="row"><label>RZ</label><input type="range" id="rrz" min="-360" max="360" step="1" value="0" /><span class="val" id="rrzVal">0</span></div>
+      <div class="row"><label>Cv</label><input type="range" id="rec" min="0" max="2" step="0.01" value="0.14" /><span class="val" id="recVal">0.14</span></div>
+    </div>
+
+    <div class="section">
+      <h4>Boca (Visemas SVG)</h4>
+      <div class="row"><label>X</label><input type="range" id="mx" min="-200" max="200" step="0.1" value="2.2" /><span class="val" id="mxVal">2.2</span></div>
+      <div class="row"><label>Y</label><input type="range" id="my" min="-200" max="200" step="0.1" value="20.2" /><span class="val" id="myVal">20.2</span></div>
+      <div class="row"><label>Z</label><input type="range" id="mz" min="0" max="200" step="0.1" value="28.1" /><span class="val" id="mzVal">28.1</span></div>
+      <div class="row"><label>Sz</label><input type="range" id="ms" min="0.01" max="400" step="0.01" value="17.99" /><span class="val" id="msVal">17.99</span></div>
+      <div class="row"><label>RX</label><input type="range" id="mrx" min="-360" max="360" step="1" value="0" /><span class="val" id="mrxVal">0</span></div>
+      <div class="row"><label>RY</label><input type="range" id="mry" min="-360" max="360" step="1" value="0" /><span class="val" id="mryVal">0</span></div>
+      <div class="row"><label>RZ</label><input type="range" id="mrz" min="-360" max="360" step="1" value="0" /><span class="val" id="mrzVal">0</span></div>
+      <div class="row"><label>Cv</label><input type="range" id="mcv" min="0" max="10" step="0.01" value="0.39" /><span class="val" id="mcvVal">0.39</span></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="btnBlink">Parpadeo</button>
+      <button class="btn-secondary" id="btnAutoBlink">Off</button>
+      <button class="btn-secondary" id="btnSave">Guardar</button>
+    </div>
+    <div class="btn-row" style="margin-top:4px">
+      <button class="btn-secondary viseme-btn on" data-viseme="X">X cerrada</button>
+      <button class="btn-secondary viseme-btn" data-viseme="A">A ah</button>
+      <button class="btn-secondary viseme-btn" data-viseme="B">B m/p/b</button>
+      <button class="btn-secondary viseme-btn" data-viseme="C">C eh</button>
+      <button class="btn-secondary viseme-btn" data-viseme="D">D ah grande</button>
+      <button class="btn-secondary viseme-btn" data-viseme="E">E oh</button>
+      <button class="btn-secondary viseme-btn" data-viseme="F">F oo/u</button>
+      <button class="btn-secondary viseme-btn" data-viseme="G">G f/v</button>
+    </div>
+    <div class="btn-row" style="margin-top:4px">
+      <button class="btn-secondary anim-btn on" data-anim="0">Idle</button>
+      <button class="btn-secondary anim-btn" data-anim="1">Run</button>
+      <button class="btn-secondary anim-btn" data-anim="2">Walk</button>
+      <button class="btn-secondary anim-btn" data-anim="3">Wave</button>
+      <button class="btn-secondary anim-btn" data-anim="4">Skip</button>
+      <button class="btn-secondary anim-btn" data-anim="5">Cheer</button>
+    </div>
+    <div class="info-row">
+      Cargar un GLB de dino con hueso <b>Head</b>.<br>
+      Los overlays van sobre la malla (depthTest=false).
+    </div>
+  </div>
+
+  <script src="../libs/three.min.js"></script>
+  <script src="../libs/OrbitControls.js"></script>
+  <script src="../libs/GLTFLoader.js"></script>
+  <script src="../libs/DRACOLoader.js"></script>
+
+  <script>
+    // ===== CONFIG =====
+    const cfg = {
+      lx: -32.2, ly: 50.6, lz: 18.4, ls: 25.3, lrx: -25, lry: -25, lrz: 4, lec: 0.55,
+      rx: 32.2, ry: 50.6, rz: 18.4, rs: 25.3, rrx: -25, rry: 25, rrz: 4, rec: 0.39,
+      mx: 2.2, my: 25.3, mz: 40, ms: 29.89, mcv: 0.39, mrx: 0, mry: 0, mrz: 0
+    };
+
+    // ===== THREE.JS =====
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x2a3a2a);
+    scene.fog = new THREE.Fog(0x2a3a2a, 4, 20);
+
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 1.5, 4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.0, 0);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.HemisphereLight(0xeafffb, 0x2a3d3d, 1.3));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    sun.position.set(2, 3, 2); scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x88aaff, 0.6);
+    fill.position.set(-2, 2, -2); scene.add(fill);
+    scene.background = new THREE.Color(0x2a4a2a);
+    scene.fog = new THREE.Fog(0x2a4a2a, 4, 15);
+
+    const loader = new THREE.GLTFLoader();
+    if (typeof THREE.DRACOLoader !== 'undefined') {
+      const dracoLoader = new THREE.DRACOLoader();
+      dracoLoader.setDecoderPath('../libs/draco/');
+      loader.setDRACOLoader(dracoLoader);
+    }
+
+    // ===== EYE/MOUTH OVERLAYS =====
+    let dinoModel = null, headBone = null, dinoMixer = null, dinoActions = {};
+    let eyeL = null, eyeR = null, eyeLAdj = null, eyeRAdj = null;
+    let mouth = null, mouthAdj = null;
+    let mouthTextures = {};
+    let eyeClosedTexL = null, eyeClosedTexR = null;
+    const dinoClock = new THREE.Clock();
+
+    const MOUTH_VISEME_FILES = {
+      X: '../assets/bocas_dinosaurio_sin_labios_transparentes/X_boca_cerrada.png?v=2',
+      B: '../assets/bocas_dinosaurio_sin_labios_transparentes/B_boca_m_p_b.png?v=2',
+      A: '../assets/bocas_dinosaurio_sin_labios_transparentes/A_boca_abierta_ah.png?v=2',
+      C: '../assets/bocas_dinosaurio_sin_labios_transparentes/C_boca_eh.png?v=2',
+      D: '../assets/bocas_dinosaurio_sin_labios_transparentes/D_boca_ah_grande.png?v=2',
+      E: '../assets/bocas_dinosaurio_sin_labios_transparentes/E_boca_oh_redonda.png?v=2',
+      F: '../assets/bocas_dinosaurio_sin_labios_transparentes/F_boca_oo_u.png?v=2',
+      G: '../assets/bocas_dinosaurio_sin_labios_transparentes/G_dientes_f_v.png?v=2',
+    };
+
+    function loadImageTexture(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const tex = new THREE.CanvasTexture(canvas);
+          tex.encoding = THREE.sRGBEncoding;
+          tex.minFilter = THREE.LinearFilter;
+          tex.magFilter = THREE.LinearFilter;
+          resolve(tex);
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+
+    function setMouthViseme(code) {
+      if (mouth && mouthTextures[code]) {
+        mouth.material.map = mouthTextures[code];
+        mouth.material.needsUpdate = true;
+      }
+    }
+
+    function updatePositions() {
+      const D2R = Math.PI / 180;
+      if (eyeLAdj) {
+        eyeLAdj.position.set(cfg.lx, cfg.ly, cfg.lz);
+        eyeLAdj.scale.setScalar(cfg.ls);
+        eyeLAdj.rotation.set(cfg.lrx * D2R, cfg.lry * D2R, cfg.lrz * D2R);
+      }
+      if (eyeRAdj) {
+        eyeRAdj.position.set(cfg.rx, cfg.ry, cfg.rz);
+        eyeRAdj.scale.setScalar(cfg.rs);
+        eyeRAdj.rotation.set(cfg.rrx * D2R, cfg.rry * D2R, cfg.rrz * D2R);
+      }
+      if (mouthAdj) {
+        mouthAdj.position.set(cfg.mx, cfg.my, cfg.mz);
+        mouthAdj.scale.setScalar(cfg.ms);
+        mouthAdj.rotation.set(cfg.mrx * D2R, cfg.mry * D2R, cfg.mrz * D2R);
+      }
+    }
+
+    function rebuildMouthCurve() {
+      if (!mouth) return;
+      const aspect = mouthTextures.X && mouthTextures.X.image ? mouthTextures.X.image.width / mouthTextures.X.image.height : 2;
+      const mw = 1.6, mh = 1.6 / aspect;
+      const geo = new THREE.PlaneBufferGeometry(mw, mh, 20, 14);
+      const posM = geo.attributes.position;
+      const curve = cfg.mcv;
+      for (let i = 0; i < posM.count; i++) {
+        const x = posM.getX(i) / (mw/2);
+        const y = posM.getY(i) / (mh/2);
+        posM.setZ(i, -curve * (x*x*0.7 + y*y*0.3));
+      }
+      geo.computeVertexNormals();
+      mouth.geometry.dispose();
+      mouth.geometry = geo;
+    }
+
+    function rebuildEyeCurve(side) {
+      const mesh = side === 'left' ? eyeL : eyeR;
+      const curve = side === 'left' ? cfg.lec : cfg.rec;
+      if (!mesh) return;
+      const w = 1.8, h = 1.4;
+      const geo = new THREE.PlaneBufferGeometry(w, h, 12, 8);
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i) / (w/2);
+        const y = pos.getY(i) / (h/2);
+        pos.setZ(i, -curve * (x*x*0.6 + y*y*0.4));
+      }
+      geo.computeVertexNormals();
+      mesh.geometry.dispose();
+      mesh.geometry = geo;
+    }
+
+    // Blink: briefly show closed-eye PNG, then hide (model's real eye shows)
+    // Eyes start hidden (model's real eyes visible)
+    function triggerBlink() {
+      if (!eyeL || !eyeR) return;
+      eyeL.visible = true; eyeR.visible = true;
+      setTimeout(() => { eyeL.visible = false; eyeR.visible = false; }, 120);
+    }
+
+    // ===== CARGAR =====
+    async function init() {
+      const BASE = '../assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Character_output-optimized.glb';
+      const RUN_PATH = '../assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Running_withSkin-optimized.glb';
+      const WALK_PATH = '../assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Walking_withSkin-optimized.glb';
+      const WAVE_PATH = '../assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Wave_One_Hand_withSkin-optimized.glb';
+      const SKIP_PATH = '../assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Skip_Forward_withSkin-optimized.glb';
+      const CHEER_PATH = '../assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Cheer_with_Both_Hands_Up_withSkin-optimized.glb';
+      const EYE_L_PATH = '../assets/ojos/ojo_cerrado_izquierdo_imagen.png';
+      const EYE_R_PATH = '../assets/ojos/ojo_cerrado_derecho_imagen.png';
+
+      const entries = Object.entries(MOUTH_VISEME_FILES);
+      const pngPromises = entries.map(([, url]) => loadImageTexture(url));
+      const [baseGltf, runGltf, walkGltf, waveGltf, skipGltf, cheerGltf, eyeTexL, eyeTexR, ...pngLoaded] = await Promise.all([
+        new Promise((res, rej) => loader.load(BASE, res, undefined, rej)),
+        new Promise((res, rej) => loader.load(RUN_PATH, res, undefined, rej)),
+        new Promise((res, rej) => loader.load(WALK_PATH, res, undefined, rej)),
+        new Promise((res, rej) => loader.load(WAVE_PATH, res, undefined, rej)),
+        new Promise((res, rej) => loader.load(SKIP_PATH, res, undefined, rej)),
+        new Promise((res, rej) => loader.load(CHEER_PATH, res, undefined, rej)),
+        loadImageTexture(EYE_L_PATH),
+        loadImageTexture(EYE_R_PATH),
+        ...pngPromises
+      ]);
+      entries.forEach(([code], i) => { mouthTextures[code] = pngLoaded[i]; });
+      eyeClosedTexL = eyeTexL;
+      eyeClosedTexR = eyeTexR;
+
+      // Dino
+      dinoModel = baseGltf.scene;
+      dinoModel.traverse(n => { if (n.isMesh) n.frustumCulled = false; });
+      scene.add(dinoModel);
+      dinoModel.updateWorldMatrix(true, false);
+      const bbox = new THREE.Box3().setFromObject(dinoModel);
+      dinoModel.position.set(0, -bbox.min.y, 0);
+      headBone = dinoModel.getObjectByName('Head');
+      const anchor = headBone || dinoModel;
+      anchor.updateWorldMatrix(true, false);
+
+      // Animations
+      dinoMixer = new THREE.AnimationMixer(dinoModel);
+      const animFiles = [
+        { gltf: baseGltf, name: 'idle' },
+        { gltf: runGltf, name: 'run' },
+        { gltf: walkGltf, name: 'walk' },
+        { gltf: waveGltf, name: 'wave' },
+        { gltf: skipGltf, name: 'skip' },
+        { gltf: cheerGltf, name: 'cheer' },
+      ];
+      animFiles.forEach(({gltf, name}) => {
+        if (gltf.animations[0]) {
+          dinoActions[name] = dinoMixer.clipAction(gltf.animations[0]);
+          dinoActions[name].enabled = true;
+        }
+      });
+      if (dinoActions.idle) dinoActions.idle.play();
+
+      // Eyes: closed-eye PNG overlays (like Lumi's system)
+      function buildEyeOverlay(tex, side) {
+        const curve = side === 'left' ? cfg.lec : cfg.rec;
+        const w = 1.8, h = 1.4;
+        const geo = new THREE.PlaneBufferGeometry(w, h, 12, 8);
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const x = pos.getX(i) / (w/2);
+          const y = pos.getY(i) / (h/2);
+          pos.setZ(i, -curve * (x*x*0.6 + y*y*0.4));
+        }
+        geo.computeVertexNormals();
+        const mat = new THREE.MeshStandardMaterial({
+          map: tex, transparent: true, roughness: 0.5,
+          depthTest: false, depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.renderOrder = 999;
+        mesh.frustumCulled = false;
+        mesh.visible = true; // visible por defecto
+        return mesh;
+      }
+
+      // Left eye overlay
+      eyeL = buildEyeOverlay(eyeClosedTexL, 'left');
+      eyeLAdj = new THREE.Group();
+      eyeLAdj.position.set(cfg.lx, cfg.ly, cfg.lz);
+      eyeLAdj.scale.setScalar(cfg.ls);
+      eyeLAdj.rotation.set(cfg.lrx*Math.PI/180, cfg.lry*Math.PI/180, cfg.lrz*Math.PI/180);
+      eyeLAdj.add(eyeL);
+      anchor.add(eyeLAdj);
+
+      // Right eye overlay
+      eyeR = buildEyeOverlay(eyeClosedTexR, 'right');
+      eyeRAdj = new THREE.Group();
+      eyeRAdj.position.set(cfg.rx, cfg.ry, cfg.rz);
+      eyeRAdj.scale.setScalar(cfg.rs);
+      eyeRAdj.rotation.set(cfg.rrx*Math.PI/180, cfg.rry*Math.PI/180, cfg.rrz*Math.PI/180);
+      eyeRAdj.add(eyeR);
+      anchor.add(eyeRAdj);
+
+      // Mouth (PNG viseme overlay)
+      const mouthAspect = mouthTextures.X.image ? mouthTextures.X.image.width / mouthTextures.X.image.height : 2;
+      const mw = 1.6, mh = 1.6 / mouthAspect;
+      const mGeo = new THREE.PlaneBufferGeometry(mw, mh, 20, 14);
+      const posMb = mGeo.attributes.position;
+      for (let i = 0; i < posMb.count; i++) {
+        const x = posMb.getX(i) / (mw/2);
+        const y = posMb.getY(i) / (mh/2);
+        posMb.setZ(i, -cfg.mcv * (x*x*0.7 + y*y*0.3));
+      }
+      mGeo.computeVertexNormals();
+      const mouthMat = new THREE.MeshStandardMaterial({
+        map: mouthTextures.X, transparent: true, roughness: 0.6,
+        depthTest: false, depthWrite: false,
+      });
+      mouth = new THREE.Mesh(mGeo, mouthMat);
+      mouth.renderOrder = 999;
+      mouth.frustumCulled = false;
+      mouthAdj = new THREE.Group();
+      mouthAdj.position.set(cfg.mx, cfg.my, cfg.mz);
+      mouthAdj.scale.setScalar(cfg.ms);
+      mouthAdj.add(mouth);
+      anchor.add(mouthAdj);
+
+      document.getElementById('loader').style.display = 'none';
+    }
+
+    let _blinkTimer = null, _autoBlink = false;
+    function startAutoBlink() {
+      stopAutoBlink();
+      if (!_autoBlink) return;
+      _blinkTimer = setTimeout(() => { triggerBlink(); startAutoBlink(); }, 4000 + Math.random() * 5000);
+    }
+    function stopAutoBlink() { if (_blinkTimer) { clearTimeout(_blinkTimer); _blinkTimer = null; } }
+
+    // ===== UI BINDINGS =====
+    const ids = { lx:'lx', ly:'ly', lz:'lz', ls:'ls', lrx:'lrx', lry:'lry', lrz:'lrz', lec:'lec', rx:'rx', ry:'ry', rz:'rz', rs:'rs', rrx:'rrx', rry:'rry', rrz:'rrz', rec:'rec', mx:'mx', my:'my', mz:'mz', ms:'ms', mcv:'mcv', mrx:'mrx', mry:'mry', mrz:'mrz' };
+    Object.entries(ids).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      const valEl = document.getElementById(id + 'Val');
+      if (!el) return;
+      el.value = cfg[key];
+      if (valEl) valEl.textContent = cfg[key];
+      el.addEventListener('input', () => {
+        cfg[key] = parseFloat(el.value);
+        if (valEl) valEl.textContent = cfg[key];
+        updatePositions();
+        if (key === 'mcv') rebuildMouthCurve();
+        if (key === 'lec') rebuildEyeCurve('left');
+        if (key === 'rec') rebuildEyeCurve('right');
+      });
+    });
+
+    document.getElementById('btnBlink').onclick = triggerBlink;
+    // Viseme buttons
+    document.querySelectorAll('.viseme-btn').forEach(btn => {
+      btn.onclick = () => {
+        setMouthViseme(btn.dataset.viseme);
+        document.querySelectorAll('.viseme-btn').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+      };
+    });
+    document.getElementById('btnAutoBlink').onclick = function() {
+      _autoBlink = !_autoBlink;
+      this.classList.toggle('on', _autoBlink);
+      this.textContent = _autoBlink ? 'Auto' : 'Off';
+      if (_autoBlink) startAutoBlink(); else stopAutoBlink();
+    };
+    // Animation buttons
+    document.querySelectorAll('.anim-btn').forEach(btn => {
+      btn.onclick = () => {
+        const names = ['idle','run','walk','wave','skip','cheer'];
+        const name = names[parseInt(btn.dataset.anim)];
+        if (!dinoActions[name]) return;
+        Object.values(dinoActions).forEach(a => { a.stop(); });
+        dinoActions[name].reset().play();
+        document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+      };
+    });
+    document.getElementById('btnSave').onclick = () => {
+      localStorage.setItem('dino_eyes_mouth', JSON.stringify(cfg));
+      alert('Guardado');
+    };
+
+    try {
+      const saved = JSON.parse(localStorage.getItem('dino_eyes_mouth'));
+      if (saved) Object.assign(cfg, saved);
+    } catch(e) {}
+
+    function render() {
+      requestAnimationFrame(render);
+      const dt = dinoClock.getDelta();
+      if (dinoMixer) dinoMixer.update(dt);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    init().then(() => render());
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="description" content="Dino - Asistente IA" />
+  <title>Dino</title>
+  <link rel="preload" as="fetch" href="assets/models/Meshy_AI_Cute_Baby_Dinosaur_biped_Character_output-optimized.glb" crossorigin="anonymous" />
+  <link rel="preload" as="script" href="libs/three.min.js" />
+  <link rel="preload" as="script" href="libs/GLTFLoader.js" />
+  <link rel="preload" as="script" href="libs/OrbitControls.js" />
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #1a2a1a; }
+    canvas { display: block; }
+
+    #mobileBg {
+      position: fixed; inset: 0; z-index: 0;
+      background: linear-gradient(180deg, #3a7a3a 0%, #5a9a5a 55%, #aadda0 100%);
+    }
+
+    #loader {
+      position: fixed; inset: 0; background: #111; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 100;
+      transition: opacity 0.5s; font-family: sans-serif;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+    #loader .spinner {
+      width: 50px; height: 50px; border: 4px solid #333;
+      border-top: 4px solid #8fbc8f; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-bottom: 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loader p { color: #aaa; font-size: 1.2em; }
+
+    :root { --mFrame: min(480px, 100vw); }
+
+    #mHeader {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: var(--mFrame); z-index: 20;
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: max(14px, env(safe-area-inset-top)) 16px 0;
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      pointer-events: none;
+    }
+    #mBack {
+      width: 40px; height: 40px; border-radius: 50%; background: #fff; border: none;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      color: #3a7a3a; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0;
+      pointer-events: auto; cursor: pointer;
+    }
+    #mTitle { flex: 1; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.25); }
+    #mTitle h1 { margin: 6px 0 0; font-size: 20px; font-weight: 800; line-height: 1.25; }
+    #mPoints {
+      display: flex; align-items: center; gap: 5px; background: #ffd23f; color: #7a4b00;
+      border-radius: 20px; padding: 6px 12px; font-weight: 800; font-size: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; pointer-events: auto;
+    }
+
+    #mNavWrap {
+      position: fixed; left: 50%; top: 0; transform: translateX(-50%);
+      width: var(--mFrame); height: 100%; z-index: 20; pointer-events: none;
+    }
+    #mNav {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 16px; pointer-events: auto;
+    }
+    .navItem { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; }
+    .navItem .navCircle {
+      width: 46px; height: 46px; border-radius: 50%; background: #fff;
+      border: 3px solid #8fbc8f; display: flex; align-items: center; justify-content: center;
+      font-size: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform .12s;
+    }
+    .navItem:active .navCircle { transform: scale(0.92); }
+    .navItem span.navLabel { color: #fff; font-size: 11px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+    body > canvas { position: fixed !important; inset: 0; z-index: 1; width: 100% !important; height: 100% !important; }
+
+    #mimoSubtitle {
+      position: fixed; left: 50%; bottom: 118px; transform: translateX(-50%) translateY(10px);
+      width: max-content; max-width: min(400px, calc(var(--mFrame) - 40px));
+      padding: 10px 18px; background: rgba(255,255,255,0.95); color: #245065;
+      border-radius: 16px; font-family: 'Segoe UI', Roboto, sans-serif; font-size: 15px;
+      font-weight: 600; text-align: center; opacity: 0; pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: opacity .25s ease, transform .25s ease;
+      z-index: 25;
+    }
+    #mimoSubtitle.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    #mBottom {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 20;
+      width: var(--mFrame);
+      padding: 8px 14px max(14px, env(safe-area-inset-bottom));
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    #mWave {
+      display: flex; align-items: flex-end; justify-content: center; gap: 3px;
+      height: 30px; padding: 0 10px;
+    }
+    #mWave span {
+      width: 3px; border-radius: 2px; background: rgba(255,255,255,0.85);
+      height: 4px; transition: height .09s ease;
+    }
+    #mInputBar {
+      display: flex; align-items: center; gap: 8px;
+      background: #fff; border-radius: 26px; padding: 6px 6px 6px 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    #mInput {
+      flex: 1; border: none; outline: none; font-size: 14px; font-family: 'Segoe UI', Roboto, sans-serif;
+      color: #234; background: transparent;
+    }
+    #mInput::placeholder { color: #9fb3bd; }
+    #mMic {
+      width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0;
+      background: #8fbc8f; color: #fff; font-size: 17px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: transform .12s, background .15s;
+    }
+    #mMic:active { transform: scale(0.92); }
+    #mMic.recording { background: #ff6b6b; color: #fff; animation: mpulse 1s infinite; }
+    @keyframes mpulse { 0%,100%{ opacity:1 } 50%{ opacity:.6 } }
+  </style>
+</head>
+<body>
+  <div id="mobileBg"></div>
+  <div id="loader"><div class="spinner"></div><p>Cargando Dino...</p></div>
+
+  <div id="mimoSubtitle"></div>
+
+  <div id="mHeader">
+    <button id="mBack" aria-label="Volver">←</button>
+    <div id="mTitle">
+      <h1>¡Hola! Soy Dino<br>¿Jugamos?</h1>
+    </div>
+    <div id="mPoints">🦖</div>
+  </div>
+
+      <div id="mNavWrap">
+    <div id="mNav">
+    </div>
+  </div>
+
+  <div id="mBottom">
+    <div id="mWave"></div>
+    <div id="mInputBar">
+      <input id="mInput" type="text" placeholder="Escribe algo o preguntale a Dino" />
+      <button id="mMic" aria-label="Hablar por microfono">🎤</button>
+    </div>
+  </div>
+
+  <script src="libs/three.min.js"></script>
+  <script src="libs/OrbitControls.js"></script>
+  <script src="libs/GLTFLoader.js"></script>
+  <script src="libs/DRACOLoader.js"></script>
+
+  <script>
+    const loader = new THREE.GLTFLoader();
+    const dracoLoader = new THREE.DRACOLoader();
+    dracoLoader.setDecoderPath('libs/draco/');
+    loader.setDRACOLoader(dracoLoader);
+
+    const scene = new THREE.Scene();
+    scene.background = null;
+
+    const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+    camera.position.set(0, 1.5, 4);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1.0, 0);
+    controls.enableDamping = true;
+    controls.enableZoom = true;
+
+    scene.add(new THREE.HemisphereLight(0xeafffb, 0x2a3d3d, 1.3));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+    sun.position.set(2, 3, 2); scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x88aaff, 0.6);
+    fill.position.set(-2, 2, -2);     scene.add(fill);
+
+    // loader already configured with draco above
+
+    let dinoModel = null, headBone = null;
+    let eyeL = null, eyeR = null;
+    let mouth = null;
+    let mouthTextures = {};
+
+    // COORDENADAS CALIBRADAS
+    const EYE_LEFT  = { x: -18.4, y: 34.5, z: 7.9, s: 20.7, rx: -37, ry: -25, rz: 0 };
+    const EYE_RIGHT = { x: 25.3, y: 32.2, z: 0, s: 18.4, rx: -37, ry: 41, rz: 4 };
+    const MOUTH_CFG = { x: 9.2, y: 23, z: 26.4, s: 13.8, rx: -8, ry: 29, rz: -12 };
+
+    const MOUTH_FILES = {
+      X: 'assets/bocas_dinosaurio_recortadas/01_boca_cerrada_X.png',
+      A: 'assets/bocas_dinosaurio_recortadas/03_boca_ah_A.png',
+      B: 'assets/bocas_dinosaurio_recortadas/02_boca_mpb_B.png',
+      C: 'assets/bocas_dinosaurio_recortadas/04_boca_eh_C.png',
+      D: 'assets/bocas_dinosaurio_recortadas/05_boca_ah_grande_D.png',
+      E: 'assets/bocas_dinosaurio_recortadas/06_boca_oh_E.png',
+      F: 'assets/bocas_dinosaurio_recortadas/07_boca_oo_u_F.png',
+      G: 'assets/bocas_dinosaurio_recortadas/08_boca_fv_dientes_G.png',
+    };
+
+    function loadTexture(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+          c.getContext('2d').drawImage(img, 0, 0);
+          const tex = new THREE.CanvasTexture(c);
+          tex.encoding = THREE.sRGBEncoding; tex.minFilter = THREE.LinearFilter;
+          resolve(tex);
+        };
+        img.onerror = reject; img.src = url;
+      });
+    }
+
+    function setMouthViseme(code) {
+      if (mouth && mouthTextures[code]) {
+        mouth.material.map = mouthTextures[code];
+        mouth.material.needsUpdate = true;
+      }
+    }
+
+    function makeEyeOverlay(tex) {
+      const w = 1.8, h = 1.4;
+      const geo = new THREE.PlaneBufferGeometry(w, h, 12, 8);
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i) / (w/2), y = pos.getY(i) / (h/2);
+        pos.setZ(i, -0.14 * (x*x*0.6 + y*y*0.4));
+      }
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.5, depthTest: false, depthWrite: false });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = 999; mesh.frustumCulled = false; mesh.visible = true;
+      return mesh;
+    }
+
+    async function init() {
+      const BASE = 'assets/models/Meshy_AI_Cute_Baby_Dinosaur_biped_Character_output-optimized.glb';
+      const EYE_L = 'assets/ojos/ojo_cerrado_izquierdo_imagen.png';
+      const EYE_R = 'assets/ojos/ojo_cerrado_derecho_imagen.png';
+
+      const mouthEntries = Object.entries(MOUTH_FILES);
+      const [baseG, eyeLTex, eyeRTex, ...mouthLoaded] = await Promise.all([
+        new Promise((r, j) => loader.load(BASE, r, undefined, j)),
+        loadTexture(EYE_L), loadTexture(EYE_R),
+        ...mouthEntries.map(([, url]) => loadTexture(url))
+      ]);
+      mouthEntries.forEach(([code], i) => { mouthTextures[code] = mouthLoaded[i]; });
+
+      dinoModel = baseG.scene;
+      dinoModel.traverse(n => { if (n.isMesh) n.frustumCulled = false; });
+      scene.add(dinoModel);
+      dinoModel.updateWorldMatrix(true, false);
+      const bbox = new THREE.Box3().setFromObject(dinoModel);
+      dinoModel.position.set(0, -bbox.min.y, 0);
+      headBone = dinoModel.getObjectByName('Head');
+      const anchor = headBone || dinoModel;
+      anchor.updateWorldMatrix(true, false);
+      const D2R = Math.PI / 180;
+
+      // Eyes
+      function placeEye(tex, cfg, g) {
+        const mesh = makeEyeOverlay(tex);
+        const adj = new THREE.Group();
+        adj.position.set(cfg.x, cfg.y, cfg.z);
+        adj.scale.setScalar(cfg.s);
+        adj.rotation.set(cfg.rx * D2R, cfg.ry * D2R, cfg.rz * D2R);
+        adj.add(mesh);
+        g.add(adj);
+        return mesh;
+      }
+      const gL = new THREE.Group(); eyeL = placeEye(eyeLTex, EYE_LEFT, gL); anchor.add(gL);
+      const gR = new THREE.Group(); eyeR = placeEye(eyeRTex, EYE_RIGHT, gR); anchor.add(gR);
+
+      // Mouth
+      const aspect = mouthTextures.X?.image?.width / mouthTextures.X?.image?.height || 2;
+      const mw = 1.6, mh = 1.6 / aspect;
+      const mGeo = new THREE.PlaneBufferGeometry(mw, mh, 20, 14);
+      const posM = mGeo.attributes.position;
+      for (let i = 0; i < posM.count; i++) {
+        const x = posM.getX(i) / (mw/2), y = posM.getY(i) / (mh/2);
+        posM.setZ(i, 0);
+      }
+      mGeo.computeVertexNormals();
+      const mouthMat = new THREE.MeshStandardMaterial({ map: mouthTextures.X, transparent: true, roughness: 0.6, depthTest: false, depthWrite: false });
+      mouth = new THREE.Mesh(mGeo, mouthMat);
+      mouth.renderOrder = 999; mouth.frustumCulled = false;
+      const mouthG = new THREE.Group();
+      mouthG.position.set(MOUTH_CFG.x, MOUTH_CFG.y, MOUTH_CFG.z);
+      mouthG.scale.setScalar(MOUTH_CFG.s);
+      mouthG.rotation.set(MOUTH_CFG.rx * D2R, MOUTH_CFG.ry * D2R, MOUTH_CFG.rz * D2R);
+      mouthG.add(mouth);
+      anchor.add(mouthG);
+
+      // Blink
+      function blink() {
+        if (eyeL) eyeL.visible = true; if (eyeR) eyeR.visible = true;
+        setTimeout(() => { if (eyeL) eyeL.visible = false; if (eyeR) eyeR.visible = false; }, 130);
+        setTimeout(blink, 3000 + Math.random() * 5000);
+      }
+      blink();
+
+      document.getElementById('loader').classList.add('hidden');
+    }
+
+    function render() {
+      requestAnimationFrame(render);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    init().then(() => render());
+    window.addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+    // Keys: fetch from server (same as Lumi)
+    // Keys: fetch from Lumi server (shares key database)
+    var keysUrl = location.hostname === '127.0.0.1' || location.hostname === 'localhost'
+      ? 'https://claw.virtualelearning.co/lumikeys'
+      : '/lumikeys';
+    fetch(keysUrl).then(function(r) { return r.ok ? r.json() : null; }).then(function(data) {
+      if (!data) return;
+      if (data.or_key) { localStorage.setItem('mimo_or_key', data.or_key); }
+      if (data.el_key) { localStorage.setItem('mimo_el_key', data.el_key); }
+      if (data.el_voice_id) { localStorage.setItem('mimo_el_voice_id', data.el_voice_id); }
+    }).catch(function() {});
+
+    // Waveform
+    const waveEl = document.getElementById('mWave');
+    for (let i = 0; i < 28; i++) { const s = document.createElement('span'); waveEl.appendChild(s); }
+    const waveBars = waveEl.querySelectorAll('span');
+    function tickWave() {
+      requestAnimationFrame(tickWave);
+      const t = performance.now() / 1000;
+      for (let i = 0; i < waveBars.length; i++) {
+        waveBars[i].style.height = (4 + Math.abs(Math.sin(t * 4 + i * 0.3)) * 10) + 'px';
+      }
+    }
+    tickWave();
+  </script>
+</body>
+</html>
