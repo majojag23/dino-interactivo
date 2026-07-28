@@ -84,6 +84,29 @@
     const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(2, 3, 2); scene.add(sun);
     scene.add(new THREE.DirectionalLight(0x88aaff, 0.6).translateX(-2).translateY(2).translateZ(-2));
 
+    // Suelo + sombra como Lumi
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    sun.castShadow = true;
+    sun.shadow.mapSize.width = 1024;
+    sun.shadow.mapSize.height = 1024;
+    sun.shadow.camera.near = 0.5;
+    sun.shadow.camera.far = 15;
+    sun.shadow.camera.left = -4;
+    sun.shadow.camera.right = 4;
+    sun.shadow.camera.top = 5;
+    sun.shadow.camera.bottom = -2;
+    sun.shadow.bias = -0.0005;
+
+    const floorGeo = new THREE.CylinderGeometry(1.5, 1.7, 0.12, 64);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x6b8c5c, roughness: 0.5, metalness: 0.05 });
+    const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+    floorMesh.position.y = -0.08;
+    floorMesh.receiveShadow = true;
+    floorMesh.castShadow = true;
+    floorMesh.renderOrder = 0;
+    scene.add(floorMesh);
+
     const loader = new THREE.GLTFLoader();
     const dc = new THREE.DRACOLoader(); dc.setDecoderPath('libs/draco/'); loader.setDRACOLoader(dc);
     let dinoModel, headBone, eyeL, eyeR, mouth, mouthTex = {}, dinoMixer, dinoActions = {};
@@ -116,7 +139,7 @@
         loadTex(EL),loadTex(ER),...me.map(([,u])=>loadTex(u))
       ]);
       me.forEach(([c],i)=>{mouthTex[c]=mL[i];});
-      dinoModel=bG.scene; dinoModel.traverse(n=>{if(n.isMesh)n.frustumCulled=false;}); scene.add(dinoModel);
+      dinoModel=bG.scene; dinoModel.traverse(n=>{if(n.isMesh){n.frustumCulled=false;n.castShadow=true;}}); scene.add(dinoModel);
       dinoModel.updateWorldMatrix(true,false); dinoModel.position.set(0,-new THREE.Box3().setFromObject(dinoModel).min.y,0);
       headBone=dinoModel.getObjectByName('Head'); const a=headBone||dinoModel; a.updateWorldMatrix(true,false);
       eyeL=makeEye(eLT,EYE_L,a); eyeR=makeEye(eRT,EYE_R,a);
