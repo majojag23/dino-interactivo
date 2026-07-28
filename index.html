@@ -53,7 +53,7 @@
   <div id="mobileBg"></div>
   <div id="loader"><div class="spinner"></div><p>Cargando Dino...</p></div>
   <div id="mSubtitle"></div>
-  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#8fbc8f;">v5</span></h1></div></div>
+  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#8fbc8f;">v6</span></h1></div></div>
   <div id="mNav">
     <button class="navItem" id="navWave"><span class="navCircle">👋</span><span class="navLabel">Ola</span></button>
       <button class="navItem" id="navIdle"><span class="navCircle">🧍</span><span class="navLabel">Parado</span></button>
@@ -111,6 +111,7 @@
     const loader = new THREE.GLTFLoader();
     const dc = new THREE.DRACOLoader(); dc.setDecoderPath('libs/draco/'); loader.setDRACOLoader(dc);
     let dinoModel, headBone, eyeL, eyeR, mouth, mouthTex = {}, dinoMixer, dinoActions = {};
+    let headBase=null, handLBase=null, handRBase=null, handLBone=null, handRBone=null;
     const D2R = Math.PI/180;
 
     const EYE_L  = { x: -32.2, y: 50.6, z: 18.4, s: 25.3, rx: -25, ry: -25, rz: 4, cv: 0.55 };
@@ -143,12 +144,11 @@
       dinoModel=bG.scene; dinoModel.traverse(n=>{if(n.isMesh){n.frustumCulled=false;n.castShadow=true;}}); scene.add(dinoModel);
       dinoModel.updateWorldMatrix(true,false); dinoModel.position.set(0,-new THREE.Box3().setFromObject(dinoModel).min.y,0);
       headBone=dinoModel.getObjectByName('Head'); const a=headBone||dinoModel; a.updateWorldMatrix(true,false);
-      const handLBone=dinoModel.getObjectByName('LeftHand')||dinoModel.getObjectByName('hand_left');
-      const handRBone=dinoModel.getObjectByName('RightHand')||dinoModel.getObjectByName('hand_right');
-      let headBase=null, handLBase=null, handRBase=null;
-      if(headBone){headBase=headBone.rotation.clone();headBone.userData={base:headBase};}
-      if(handLBone){handLBase=handLBone.rotation.clone();handLBone.userData={base:handLBase};}
-      if(handRBone){handRBase=handRBone.rotation.clone();handRBone.userData={base:handRBase};}
+      handLBone=dinoModel.getObjectByName('LeftHand')||dinoModel.getObjectByName('hand_left');
+      handRBone=dinoModel.getObjectByName('RightHand')||dinoModel.getObjectByName('hand_right');
+      if(headBone)headBase=headBone.rotation.clone();
+      if(handLBone)handLBase=handLBone.rotation.clone();
+      if(handRBone)handRBase=handRBone.rotation.clone();
       eyeL=makeEye(eLT,EYE_L,a); eyeR=makeEye(eRT,EYE_R,a);
       const as=mouthTex.X?.image?.width/mouthTex.X?.image?.height||2; const mw=1.6,mh=1.6/as;
       const mg=new THREE.PlaneBufferGeometry(mw,mh,20,14); mg.computeVertexNormals();
