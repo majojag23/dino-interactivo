@@ -53,7 +53,7 @@
   <div id="mobileBg"></div>
   <div id="loader"><div class="spinner"></div><p>Cargando Dino...</p></div>
   <div id="mSubtitle"></div>
-  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#2FCAD6;">v12</span></h1></div></div>
+  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#2FCAD6;">v13</span></h1></div></div>
   <div id="mNav">
     <button class="navItem" id="navWave"><span class="navCircle">👋</span><span class="navLabel">Ola</span></button>
       <button class="navItem" id="navIdle"><span class="navCircle">🧍</span><span class="navLabel">Parado</span></button>
@@ -279,7 +279,14 @@
     document.getElementById('mInput').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
 
     // Nav buttons
-    document.getElementById('navWave').onclick=()=>{if(dinoActions.wave){Object.values(dinoActions).forEach(a=>a.stop());dinoActions.wave.reset().play();}};
+      document.getElementById('navWave').onclick=()=>{
+        if(dinoActions.wave){
+          Object.values(dinoActions).forEach(a=>a.stop());
+          dinoActions.wave.reset();
+          dinoActions.wave.setEffectiveWeight(0.45);
+          dinoActions.wave.play();
+        }
+      };
     document.getElementById('navWalk').onclick=()=>{if(dinoActions.walk){Object.values(dinoActions).forEach(a=>a.stop());dinoActions.walk.reset().play();}};
     document.getElementById('navIdle').onclick=()=>{if(dinoActions.idle){Object.values(dinoActions).forEach(a=>a.stop());dinoActions.idle.reset().play();}};
 
@@ -352,21 +359,6 @@
       if(handRBone&&handRBase){
         handRBone.rotation.x=handRBase.x+Math.sin(t*1.1)*0.04;
         handRBone.rotation.z=handRBase.z+Math.sin(t*0.8+0.7)*0.03;
-      }
-      // Moderar animacion wave: limitar elevacion del brazo y evitar deformacion
-      if(waveArmBone&&waveArmBase&&dinoActions.wave&&dinoActions.wave.isRunning()){
-        const r=waveArmBone.rotation;
-        if(r.x>0.35)r.x=0.35;
-        if(r.x<-0.15)r.x=-0.15;
-        if(r.z>0.3)r.z=0.3;
-        if(r.z<-0.2)r.z=-0.2;
-      }
-      if(waveShoulderBase&&dinoActions.wave&&dinoActions.wave.isRunning()){
-        const sBone=dinoModel.getObjectByName('RightShoulder');
-        if(sBone){
-          if(sBone.rotation.x>0.15)sBone.rotation.x=0.15;
-          if(sBone.rotation.x<-0.08)sBone.rotation.x=-0.08;
-        }
       }
       // Stretch & squash sutil en todo el cuerpo
       if(dinoModel){
