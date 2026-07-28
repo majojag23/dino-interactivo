@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Dino</title>
-  <link rel="preload" as="fetch" href="assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Character_output-optimized.glb" crossorigin="anonymous" />
+  <link rel="preload" as="fetch" href="assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Character_output-optimized.glb?v=3" crossorigin="anonymous" />
   <link rel="preload" as="script" href="libs/three.min.js" />
   <link rel="preload" as="script" href="libs/GLTFLoader.js" />
   <link rel="preload" as="script" href="libs/OrbitControls.js" />
@@ -116,10 +116,10 @@
     const EYE_R  = { x: 32.2, y: 50.6, z: 18.4, s: 25.3, rx: -25, ry: 25, rz: 4, cv: 0.39 };
     const MOUTH  = { x: 2.2, y: 25.3, z: 40, s: 29.89, rx: 0, ry: 0, rz: 0 };
     const MOUTH_F = {
-      X:'assets/bocas_dinosaurio_sin_labios_transparentes/X_boca_cerrada.png?v=2', A:'assets/bocas_dinosaurio_sin_labios_transparentes/A_boca_abierta_ah.png?v=2',
-      B:'assets/bocas_dinosaurio_sin_labios_transparentes/B_boca_m_p_b.png?v=2', C:'assets/bocas_dinosaurio_sin_labios_transparentes/C_boca_eh.png?v=2',
-      D:'assets/bocas_dinosaurio_sin_labios_transparentes/D_boca_ah_grande.png?v=2', E:'assets/bocas_dinosaurio_sin_labios_transparentes/E_boca_oh_redonda.png?v=2',
-      F:'assets/bocas_dinosaurio_sin_labios_transparentes/F_boca_oo_u.png?v=2', G:'assets/bocas_dinosaurio_sin_labios_transparentes/G_dientes_f_v.png?v=2',
+      X:'assets/bocas_dinosaurio_sin_labios_transparentes/X_boca_cerrada.png?v=3', A:'assets/bocas_dinosaurio_sin_labios_transparentes/A_boca_abierta_ah.png?v=3',
+      B:'assets/bocas_dinosaurio_sin_labios_transparentes/B_boca_m_p_b.png?v=3', C:'assets/bocas_dinosaurio_sin_labios_transparentes/C_boca_eh.png?v=3',
+      D:'assets/bocas_dinosaurio_sin_labios_transparentes/D_boca_ah_grande.png?v=3', E:'assets/bocas_dinosaurio_sin_labios_transparentes/E_boca_oh_redonda.png?v=3',
+      F:'assets/bocas_dinosaurio_sin_labios_transparentes/F_boca_oo_u.png?v=3', G:'assets/bocas_dinosaurio_sin_labios_transparentes/G_dientes_f_v.png?v=3',
     };
 
     function loadTex(u) { return new Promise((R,J)=>{ const i=new Image(); i.onload=()=>{ const c=document.createElement('canvas'); c.width=i.width; c.height=i.height; c.getContext('2d').drawImage(i,0,0); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.minFilter=THREE.LinearFilter; R(t); }; i.onerror=J; i.src=u; }); }
@@ -127,10 +127,10 @@
     function makeEye(t,C,a){ const g=new THREE.PlaneBufferGeometry(1.8,1.4,12,8); const p=g.attributes.position; for(let i=0;i<p.count;i++){const x=p.getX(i)/0.9,y=p.getY(i)/0.7;p.setZ(i,-(C.cv||0.14)*(x*x*0.6+y*y*0.4));} g.computeVertexNormals(); const m=new THREE.MeshStandardMaterial({map:t,transparent:true,roughness:0.5,depthTest:false,depthWrite:false}); const M=new THREE.Mesh(g,m); M.renderOrder=999;M.frustumCulled=false;M.visible=true; const A=new THREE.Group(); A.position.set(C.x,C.y,C.z);A.scale.setScalar(C.s);A.rotation.set(C.rx*D2R,C.ry*D2R,C.rz*D2R);A.add(M);a.add(A);return M; }
 
     async function init3D() {
-      const B='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Character_output-optimized.glb';
-      const W='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Walking_withSkin-optimized.glb';
-      const V='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Wave_One_Hand_withSkin-optimized.glb';
-      const EL='assets/ojos/ojo_cerrado_izquierdo_imagen.png', ER='assets/ojos/ojo_cerrado_derecho_imagen.png';
+      const B='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Character_output-optimized.glb?v=3';
+      const W='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Walking_withSkin-optimized.glb?v=3';
+      const V='assets/models/Meshy_AI_Emerald_Dragon_Cub_biped_Animation_Wave_One_Hand_withSkin-optimized.glb?v=3';
+      const EL='assets/ojos/ojo_cerrado_izquierdo_imagen.png?v=3', ER='assets/ojos/ojo_cerrado_derecho_imagen.png?v=3';
       const me=Object.entries(MOUTH_F);
       const [bG,wG,vG,eLT,eRT,...mL]=await Promise.all([
         new Promise((res,rej)=>loader.load(B,res,undefined,rej)),
