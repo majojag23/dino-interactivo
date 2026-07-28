@@ -75,8 +75,9 @@
   <script src="libs/GLTFLoader.js"></script>
   <script src="libs/DRACOLoader.js"></script>
   <script>
+    window.onerror=function(m,s,l,c,e){document.getElementById('loader').textContent='Error JS: '+m;console.error(m,s,l,c,e);};
     // ===== 3D SETUP =====
-    const scene = new THREE.Scene(); scene.background = null;
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x1a2a1a);
     const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100); camera.position.set(0, 1.5, 4);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.setSize(innerWidth, innerHeight); document.body.appendChild(renderer.domElement);
     const controls = new THREE.OrbitControls(camera, renderer.domElement); controls.target.set(0, 1, 0); controls.enableDamping = true;
@@ -99,7 +100,7 @@
     sun.shadow.bias = -0.0005;
 
     const floorGeo = new THREE.CylinderGeometry(1.5, 1.7, 0.12, 64);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x6b8c5c, roughness: 0.5, metalness: 0.05 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0xc4a56e, roughness: 0.5, metalness: 0.05 });
     const floorMesh = new THREE.Mesh(floorGeo, floorMat);
     floorMesh.position.y = -0.08;
     floorMesh.receiveShadow = true;
@@ -348,7 +349,8 @@
       }
       renderer.render(scene,camera);
     }
-    init3D().then(()=>render());
+    init3D().then(()=>render()).catch(e=>{document.getElementById('loader').textContent='Error: '+(e.message||e);console.error(e);});
+    setTimeout(()=>{const l=document.getElementById('loader');if(l&&l.style.display!=='none')l.textContent='Cargando... (lento)';},8000);
     window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
   </script>
 </body>
