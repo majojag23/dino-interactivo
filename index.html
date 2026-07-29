@@ -25,12 +25,6 @@
     #mSubtitle { position: fixed; left: 50%; bottom: 130px; transform: translateX(-50%) translateY(10px); width: max-content; max-width: min(400px, calc(var(--mFrame) - 40px)); padding: 10px 18px; background: rgba(255,255,255,0.95); color: #234; border-radius: 16px; font-size: 15px; font-weight: 600; text-align: center; opacity: 0; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: opacity .25s, transform .25s; z-index: 25; }
     #mSubtitle.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
     #mBottom { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 20; width: var(--mFrame); padding: 8px 14px max(14px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
-    #mChatLog { max-height: 120px; overflow-y: auto; margin-bottom: 4px; font-size: 12px; display: flex; flex-direction: column; }
-    .msg { padding: 5px 10px; border-radius: 10px; font-size: 12px; max-width: 80%; word-wrap: break-word; margin-bottom: 3px; line-height: 1.4; }
-    .msg-user { background: #8fbc8f; color: #1a2a1a; align-self: flex-end; }
-    .msg-dino { background: rgba(255,255,255,0.9); color: #234; align-self: flex-start; }
-    .msg-think { color: #5a7a5a; font-style: italic; font-size: 11px; align-self: flex-start; }
-    .msg-error { color: #c44; font-size: 11px; align-self: flex-start; }
     #mInputBar { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 26px; padding: 6px 6px 6px 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
     #mInput { flex: 1; border: none; outline: none; font-size: 14px; color: #234; background: transparent; }
     #mInput::placeholder { color: #9fb3bd; }
@@ -53,7 +47,7 @@
   <div id="mobileBg"></div>
   <div id="loader"><div class="spinner"></div><p>Cargando Dino...</p></div>
   <div id="mSubtitle"></div>
-  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#2FCAD6;">v13</span></h1></div></div>
+  <div id="mHeader"><div id="mTitle"><h1>¡Hola! Soy Dino 🦖 <span style="font-size:10px;color:#2FCAD6;">v14</span></h1></div></div>
   <div id="mNav">
     <button class="navItem" id="navWave"><span class="navCircle">👋</span><span class="navLabel">Ola</span></button>
       <button class="navItem" id="navIdle"><span class="navCircle">🧍</span><span class="navLabel">Parado</span></button>
@@ -61,7 +55,6 @@
   </div>
   <div id="mBottom">
     <div id="mWave"></div>
-    <div id="mChatLog"></div>
     <div id="mInputBar">
       <input id="mInput" type="text" placeholder="Escribe algo o preguntale a Dino" />
       <button id="mMic" aria-label="Micrófono">🎤</button>
@@ -177,7 +170,6 @@
     let _busy=false;
 
     function _cancel() { try { if(dinoAudio&&!dinoAudio.paused){dinoAudio.pause();dinoAudio.currentTime=0;} if('speechSynthesis' in window)speechSynthesis.cancel(); setViseme('X'); hideSub(); } catch(e){} }
-    function add(m,c){ const d=document.createElement('div'); d.textContent=m; d.className='msg msg-'+c; document.getElementById('mChatLog').appendChild(d); d.scrollIntoView(false); }
     function showSub(t){ const s=document.getElementById('mSubtitle'); s.textContent=t; s.classList.add('visible'); }
     function hideSub(){ document.getElementById('mSubtitle').classList.remove('visible'); }
 
@@ -208,13 +200,13 @@
 
     async function speak(text) {
       _cancel(); showSub(text);
-      if(!EL_KEY){add('Falta ElevenLabs Key','dino');hideSub();return;}
+      if(!EL_KEY){showSub('Falta ElevenLabs Key');hideSub();return;}
 
       const res=await fetch('/api/tts-el',{
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({text})
       });
-      if(!res.ok||!res.body){add('Error TTS','dino');hideSub();return;}
+      if(!res.ok||!res.body){showSub('Error TTS');hideSub();return;}
 
       const ms=new MediaSource(); dinoAudio.src=URL.createObjectURL(ms);
       const vm=visemes(text); let vi=0, vs=0, vt=null, started=false;
@@ -243,10 +235,10 @@
     }
 
     async function ask(text) {
-      if(_busy){add('Espera un momento...','think');return;}
+      if(_busy){showSub('Espera un momento...');return;}
       _busy=true; _cancel();
-      if(!OR_KEY){add('Falta OpenRouter Key','error');_busy=false;return;}
-      add('Dino pensando...','think');
+      if(!OR_KEY){showSub('Falta OpenRouter Key');_busy=false;return;}
+      showSub('Dino pensando...');
       try {
         // El servidor (/api/chat) hace de proxy a OpenRouter con la or_key
         // encriptada server-side: el navegador nunca ve la clave.
@@ -261,11 +253,9 @@
         const d = await r.json();
         const reply = d.reply;
         if (!reply) throw new Error(d.error || 'sin contenido');
-        document.querySelectorAll('.msg-think').forEach(e=>e.remove());
-        add(reply,'dino'); await speak(reply);
+        showSub(reply); await speak(reply);
       }catch(e){
-        document.querySelectorAll('.msg-think').forEach(e=>e.remove());
-        add('Error: '+(e.errors?e.errors.map(x=>x.message).join('|'):e.message),'error');
+        showSub('Error: '+(e.errors?e.errors.map(x=>x.message).join('|'):e.message));
       }
       _busy=false;
     }
@@ -273,7 +263,7 @@
     function send() {
       const t=document.getElementById('mInput').value.trim();
       if(!t)return; _cancel();
-      add(t,'user'); document.getElementById('mInput').value=''; ask(t);
+      document.getElementById('mInput').value=''; ask(t);
     }
     document.getElementById('mSend').onclick=send;
     document.getElementById('mInput').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
@@ -298,7 +288,7 @@
 
     // Microphone
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = null, listening = false, micLog = null;
+    let recognition = null, listening = false;
 
     function initMic() {
       if (!SpeechRecognition) return;
@@ -309,33 +299,29 @@
       rec.onstart = () => {
         listening = true; handled = false;
         document.getElementById('mMic').classList.add('recording');
-        if (micLog) micLog.remove();
-        micLog = document.createElement('div'); micLog.className = 'msg msg-think'; micLog.textContent = '🎤 Escuchando...';
-        document.getElementById('mChatLog').appendChild(micLog); micLog.scrollIntoView(false);
+        showSub('🎤 Escuchando...');
       };
       rec.onresult = (e) => {
         const last = e.results[e.results.length-1];
         const txt = last[0].transcript.trim(); if (!txt) return;
         document.getElementById('mInput').value = txt;
         if (last.isFinal && !handled) {
-          handled = true; if (micLog) { micLog.remove(); micLog = null; }
+          handled = true; hideSub();
           document.getElementById('mInput').value = txt; send();
         }
       };
       rec.onerror = (e) => {
-        if (micLog) { micLog.remove(); micLog = null; }
         listening = false; document.getElementById('mMic').classList.remove('recording');
-        add('Mic: '+e.error,'error');
+        showSub('Mic: '+e.error);
       };
       rec.onend = () => {
-        if (micLog) { micLog.remove(); micLog = null; }
         listening = false; document.getElementById('mMic').classList.remove('recording');
       };
       return rec;
     }
 
     document.getElementById('mMic').onclick = () => {
-      if (!SpeechRecognition) { add('Microfono no soportado','error'); return; }
+      if (!SpeechRecognition) { showSub('Microfono no soportado'); return; }
       if (listening && recognition) { try { recognition.stop(); } catch(e) {} return; }
       try { if (recognition) recognition.abort(); } catch(e) {}
       recognition = initMic(); if (recognition) recognition.start();
